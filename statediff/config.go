@@ -22,26 +22,27 @@ package statediff
 import "fmt"
 
 type Config struct {
-	On bool
-	Mode StateDiffMode
+	On   bool           // Whether or not to extract state diffs
+	Mode StateDiffMode  // Mode for storing diffs
+	Path string		    // Path for storing diffs
 }
 
 type StateDiffMode int
 
 const (
-	IPFS  StateDiffMode = iota
+	IPLD  StateDiffMode = iota
 	LDB
 	SQL
 )
 
 func (mode StateDiffMode) IsValid() bool {
-	return mode >= IPFS && mode <= SQL
+	return mode >= IPLD && mode <= SQL
 }
 
 // String implements the stringer interface.
 func (mode StateDiffMode) String() string {
 	switch mode {
-	case IPFS:
+	case IPLD:
 		return "ipfs"
 	case LDB:
 		return "ldb"
@@ -54,7 +55,7 @@ func (mode StateDiffMode) String() string {
 
 func (mode StateDiffMode) MarshalText() ([]byte, error) {
 	switch mode {
-	case IPFS:
+	case IPLD:
 		return []byte("ipfs"), nil
 	case LDB:
 		return []byte("ldb"), nil
@@ -68,7 +69,7 @@ func (mode StateDiffMode) MarshalText() ([]byte, error) {
 func (mode *StateDiffMode) UnmarshalText(text []byte) error {
 	switch string(text) {
 	case "ipfs":
-		*mode = IPFS
+		*mode = IPLD
 	case "ldb":
 		*mode = LDB
 	case "sql":

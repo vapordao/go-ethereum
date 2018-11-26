@@ -78,7 +78,7 @@ func (sdb *builder) BuildStateDiff(oldStateRoot, newStateRoot common.Hash, block
 	updatedKeys := findIntersection(createKeys, deleteKeys)
 
 	// Build and return the statediff
-	updatedAccounts, err := sdb.buildDiffIncremental(creations, deletions, &updatedKeys)
+	updatedAccounts, err := sdb.buildDiffIncremental(creations, deletions, updatedKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -133,6 +133,7 @@ func (sdb *builder) collectDiffNodes(a, b trie.NodeIterator) (map[common.Address
 			break
 		}
 	}
+
 	return diffAccounts, nil
 }
 
@@ -140,66 +141,63 @@ func (sdb *builder) buildDiffEventual(accounts map[common.Address]*state.Account
 	accountDiffs := make(map[common.Address]AccountDiffEventual)
 	for addr, val := range accounts {
 		sr := val.Root
-		if storageDiffs, err := sdb.buildStorageDiffsEventual(sr, created); err != nil {
+		storageDiffs, err := sdb.buildStorageDiffsEventual(sr, created)
+		if err != nil {
 			log.Error("Failed building eventual storage diffs", "Address", val, "error", err)
 			return nil, err
-		} else {
-			code := ""
-			codeBytes, err := sdb.chainDB.Get(val.CodeHash)
-			if err == nil && len(codeBytes) != 0 {
-				code = common.ToHex(codeBytes)
-			} else {
-				log.Debug("No code field.", "codehash", val.CodeHash, "Address", val, "error", err)
+		}
+
+		codeBytes, err := sdb.chainDB.Get(val.CodeHash)
+
+		codeHash := common.ToHex(val.CodeHash)
+		hexRoot := val.Root.Hex()
+
+		if created {
+			nonce := diffUint64{
+				NewValue: &val.Nonce,
 			}
-			codeHash := common.ToHex(val.CodeHash)
-			if created {
-				nonce := diffUint64{
-					NewValue: &val.Nonce,
-				}
 
-				balance := diffBigInt{
-					NewValue: val.Balance,
-				}
+			balance := diffBigInt{
+				NewValue: val.Balance,
+			}
 
-				hexRoot := val.Root.Hex()
-				contractRoot := diffString{
-					NewValue: &hexRoot,
-				}
-				accountDiffs[addr] = AccountDiffEventual{
-					Nonce:        nonce,
-					Balance:      balance,
-					CodeHash:     codeHash,
-					Code:         code,
-					ContractRoot: contractRoot,
-					Storage:      storageDiffs,
-				}
-			} else {
-				nonce := diffUint64{
-					OldValue: &val.Nonce,
-				}
-				balance := diffBigInt{
-					OldValue: val.Balance,
-				}
-				hexRoot := val.Root.Hex()
-				contractRoot := diffString{
-					OldValue: &hexRoot,
-				}
-				accountDiffs[addr] = AccountDiffEventual{
-					Nonce:        nonce,
-					Balance:      balance,
-					CodeHash:     codeHash,
-					ContractRoot: contractRoot,
-					Storage:      storageDiffs,
-				}
+			contractRoot := diffString{
+				NewValue: &hexRoot,
+			}
+			accountDiffs[addr] = AccountDiffEventual{
+				Nonce:        nonce,
+				Balance:      balance,
+				CodeHash:     codeHash,
+				Code:         codeBytes,
+				ContractRoot: contractRoot,
+				Storage:      storageDiffs,
+			}
+		} else {
+			nonce := diffUint64{
+				OldValue: &val.Nonce,
+			}
+			balance := diffBigInt{
+				OldValue: val.Balance,
+			}
+			contractRoot := diffString{
+				OldValue: &hexRoot,
+			}
+			accountDiffs[addr] = AccountDiffEventual{
+				Nonce:        nonce,
+				Balance:      balance,
+				CodeHash:     codeHash,
+				ContractRoot: contractRoot,
+				Storage:      storageDiffs,
 			}
 		}
 	}
+
 	return accountDiffs, nil
 }
 
-func (sdb *builder) buildDiffIncremental(creations map[common.Address]*state.Account, deletions map[common.Address]*state.Account, updatedKeys *[]string) (map[common.Address]AccountDiffIncremental, error) {
+func (sdb *builder) buildDiffIncremental(creations map[common.Address]*state.Account, deletions map[common.Address]*state.Account, updatedKeys []string) (map[common.Address]AccountDiffIncremental, error) {
 	updatedAccounts := make(map[common.Address]AccountDiffIncremental)
-	for _, val := range *updatedKeys {
+	for _, val := range updatedKeys {
 		createdAcc := creations[common.HexToAddress(val)]
 		deletedAcc := deletions[common.HexToAddress(val)]
 		oldSR := deletedAcc.Root

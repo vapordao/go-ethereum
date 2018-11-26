@@ -19,22 +19,45 @@
 
 package statediff
 
-type Persister interface {
-	PersistStateDiff(sd *StateDiff) error
+import (
+	"errors"
+	"github.com/i-norden/go-ethereum/statediff/ipfs"
+)
+
+type Publisher interface {
+	PublishStateDiff(sd *StateDiff) (string, error)
 }
 
-type persister struct {
-
+type publisher struct {
+	ipfs.DagPutter
+	Config
 }
 
-func NewPersister() *persister {
-	return &persister{
-
+func NewPublisher(config Config) (*publisher, error) {
+	adder, err := ipfs.NewAdder(config.Path)
+	if err != nil {
+		return nil, err
 	}
+
+	return &publisher{
+		DagPutter: ipfs.NewDagPutter(adder),
+		Config: config,
+	}, nil
 }
 
-func (p *persister) PersistStateDiff(sd *StateDiff) error {
-	//TODO: Persist state diff in IPFS
+func (p *publisher) PublishStateDiff(sd *StateDiff) (string, error) {
+	switch p.Mode {
+	case IPLD:
+		cidStr, err := p.DagPut(sd)
+		if err != nil {
+			return "", err
+		}
 
-	return nil
+		return cidStr, err
+	case LDB:
+	case SQL:
+	default:
+	}
+
+	return "", errors.New("state diff publisher: unhandled publishing mode")
 }

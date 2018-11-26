@@ -17,39 +17,42 @@
 // Contains a batch of utility type declarations used by the tests. As the node
 // operates on unique types, a lot of them are needed to check various features.
 
-package statediff
+package ipfs
 
 import (
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethdb"
+	"context"
+
+	"github.com/ipfs/go-ipfs/core"
+	"github.com/ipfs/go-ipfs/repo/fsrepo"
+	ipld "gx/ipfs/QmWi2BYBL5gJ3CiAiQchg6rn1A8iBsrWy51EYxvHVjFvLb/go-ipld-format"
 )
 
-type Extractor interface {
-	ExtractStateDiff(parent, current types.Block) (string, error)
+type Adder interface {
+	Add(node ipld.Node) error
 }
 
-type extractor struct {
-	*builder   // Interface for building state diff objects from two blocks
-	*publisher // Interface for publishing state diff objects to a datastore (e.g. IPFS)
+type adder struct {
+	n   *core.IpfsNode
+	ctx context.Context
 }
 
-func NewExtractor(db ethdb.Database, config Config) (*extractor, error) {
-	publisher, err := NewPublisher(config)
+func (a adder) Add(node ipld.Node) error {
+	return a.n.DAG.Add(a.n.Context(), node) // For some reason DAG.Add method is not being exposed by the ipld.DAGService
+}
+
+func NewAdder(repoPath string) (*adder, error) {
+	r, err := fsrepo.Open(repoPath)
 	if err != nil {
 		return nil, err
 	}
-
-	return &extractor{
-		builder: NewBuilder(db),
-		publisher: publisher,
-	}, nil
-}
-
-func (e *extractor) ExtractStateDiff(parent, current types.Block) (string, error) {
-	stateDiff, err := e.BuildStateDiff(parent.Root(), current.Root(), current.Number().Int64(), current.Hash())
-	if err != nil {
-		return "", err
+	ctx := context.Background()
+	cfg := &core.BuildCfg{
+		Online: false,
+		Repo:   r,
 	}
-
-	return e.PublishStateDiff(stateDiff)
+	ipfsNode, err := core.NewNode(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return &adder{n: ipfsNode, ctx: ctx}, nil
 }

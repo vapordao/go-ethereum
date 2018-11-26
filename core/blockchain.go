@@ -20,7 +20,6 @@ package core
 import (
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/statediff"
 	"io"
 	"math/big"
 	mrand "math/rand"
@@ -45,6 +44,7 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
 	"github.com/hashicorp/golang-lru"
+	"github.com/ethereum/go-ethereum/statediff"
 )
 
 var (
@@ -73,7 +73,7 @@ type CacheConfig struct {
 	TrieCleanLimit int           // Memory allowance (MB) to use for caching trie nodes in memory
 	TrieDirtyLimit int           // Memory limit (MB) at which to start flushing dirty trie nodes to disk
 	TrieTimeLimit  time.Duration // Time limit after which to flush the current in-memory trie to disk
-	StateDiff      bool          // Whether or not to calculate and persist state diffs
+	StateDiff      statediff.Config // Settings for state diff extraction
 }
 
 // BlockChain represents the canonical chain given a database with a genesis
@@ -177,11 +177,14 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 	bc.SetValidator(NewBlockValidator(chainConfig, bc, engine))
 	bc.SetProcessor(NewStateProcessor(chainConfig, bc, engine))
 
-	if cacheConfig.StateDiff {
-		bc.diffExtractor = statediff.NewExtractor(db)
+	var err error
+	if cacheConfig.StateDiff.On {
+		bc.diffExtractor, err = statediff.NewExtractor(db, cacheConfig.StateDiff)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	var err error
 	bc.hc, err = NewHeaderChain(db, chainConfig, engine, bc.getProcInterrupt)
 	if err != nil {
 		return nil, err
@@ -1214,8 +1217,12 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []interface{}, []*ty
 		proctime := time.Since(bstart)
 
 		// If extracting statediffs, do so now
-		if bc.cacheConfig.StateDiff {
-			bc.diffExtractor.Extract(*parent, *block)
+		if bc.cacheConfig.StateDiff.On {
+			// Currently not doing anything with returned cid...
+			_, err = bc.diffExtractor.ExtractStateDiff(*parent, *block)
+			if err != nil {
+				return i, events, coalescedLogs, err
+			}
 		}
 
 		// Write the block to the chain and get the status.

@@ -58,7 +58,7 @@ func (sd *StateDiff) Encode() ([]byte, error) {
 type AccountDiffEventual struct {
 	Nonce        diffUint64            `json:"nonce"         gencodec:"required"`
 	Balance      diffBigInt            `json:"balance"       gencodec:"required"`
-	Code         string                `json:"code"          gencodec:"required"`
+	Code         []byte                `json:"code"          gencodec:"required"`
 	CodeHash     string                `json:"codeHash"      gencodec:"required"`
 	ContractRoot diffString            `json:"contractRoot"  gencodec:"required"`
 	Storage      map[string]diffString `json:"storage"       gencodec:"required"`

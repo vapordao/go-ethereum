@@ -17,39 +17,22 @@
 // Contains a batch of utility type declarations used by the tests. As the node
 // operates on unique types, a lot of them are needed to check various features.
 
-package statediff
+package ipfs
 
 import (
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethdb"
+	mh "gx/ipfs/QmZyZDi491cCNTLfAhwcaDii2Kg4pwKRkhqQzURGDvY6ua/go-multihash"
+	"gx/ipfs/QmapdYm1b22Frv3k17fqrBYTFRxwiaVJkB299Mfn33edeB/go-cid"
 )
 
-type Extractor interface {
-	ExtractStateDiff(parent, current types.Block) (string, error)
-}
-
-type extractor struct {
-	*builder   // Interface for building state diff objects from two blocks
-	*publisher // Interface for publishing state diff objects to a datastore (e.g. IPFS)
-}
-
-func NewExtractor(db ethdb.Database, config Config) (*extractor, error) {
-	publisher, err := NewPublisher(config)
+func RawToCid(codec uint64, raw []byte) (*cid.Cid, error) {
+	c, err := cid.Prefix{
+		Codec:    codec,
+		Version:  1,
+		MhType:   mh.KECCAK_256,
+		MhLength: -1,
+	}.Sum(raw)
 	if err != nil {
 		return nil, err
 	}
-
-	return &extractor{
-		builder: NewBuilder(db),
-		publisher: publisher,
-	}, nil
-}
-
-func (e *extractor) ExtractStateDiff(parent, current types.Block) (string, error) {
-	stateDiff, err := e.BuildStateDiff(parent.Root(), current.Root(), current.Number().Int64(), current.Hash())
-	if err != nil {
-		return "", err
-	}
-
-	return e.PublishStateDiff(stateDiff)
+	return c, nil
 }

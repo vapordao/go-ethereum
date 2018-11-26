@@ -17,39 +17,63 @@
 // Contains a batch of utility type declarations used by the tests. As the node
 // operates on unique types, a lot of them are needed to check various features.
 
-package statediff
+package ipfs
 
 import (
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethdb"
+	"bytes"
+	"encoding/gob"
+	"github.com/i-norden/go-ethereum/statediff"
+
+	ipld "gx/ipfs/QmWi2BYBL5gJ3CiAiQchg6rn1A8iBsrWy51EYxvHVjFvLb/go-ipld-format"
 )
 
-type Extractor interface {
-	ExtractStateDiff(parent, current types.Block) (string, error)
+const (
+	EthStateDiffCode = 0x99 // Register custom codec for state diff?
+)
+
+type DagPutter interface {
+	DagPut(sd *statediff.StateDiff) (string, error)
 }
 
-type extractor struct {
-	*builder   // Interface for building state diff objects from two blocks
-	*publisher // Interface for publishing state diff objects to a datastore (e.g. IPFS)
+type dagPutter struct {
+	Adder
 }
 
-func NewExtractor(db ethdb.Database, config Config) (*extractor, error) {
-	publisher, err := NewPublisher(config)
+func NewDagPutter(adder Adder) *dagPutter {
+	return &dagPutter{Adder: adder}
+}
+
+func (bhdp *dagPutter) DagPut(sd *statediff.StateDiff) (string, error) {
+	nd, err := bhdp.getNode(sd)
+	if err != nil {
+		return "", err
+	}
+	err = bhdp.Add(nd)
+	if err != nil {
+		return "", err
+	}
+	return nd.Cid().String(), nil
+}
+
+func (bhdp *dagPutter) getNode(sd *statediff.StateDiff) (ipld.Node, error) {
+
+	var buff bytes.Buffer
+	enc := gob.NewEncoder(&buff)
+
+	err := enc.Encode(sd)
 	if err != nil {
 		return nil, err
 	}
 
-	return &extractor{
-		builder: NewBuilder(db),
-		publisher: publisher,
-	}, nil
-}
-
-func (e *extractor) ExtractStateDiff(parent, current types.Block) (string, error) {
-	stateDiff, err := e.BuildStateDiff(parent.Root(), current.Root(), current.Number().Int64(), current.Hash())
+	raw := buff.Bytes()
+	cid, err := RawToCid(EthStateDiffCode, raw)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return e.PublishStateDiff(stateDiff)
+	return &StateDiffNode{
+		StateDiff: sd,
+		cid:  cid,
+		rawdata: raw,
+	}, nil
 }
