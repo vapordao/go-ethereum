@@ -1,3 +1,22 @@
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
+//
+// The go-ethereum library is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The go-ethereum library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+
+// Contains a batch of utility type declarations used by the tests. As the node
+// operates on unique types, a lot of them are needed to check various features.
+
 package statediff
 
 import (
@@ -9,24 +28,24 @@ import (
 	"github.com/ethereum/go-ethereum/trie"
 )
 
-type StateDiffBuilder interface {
-	CreateStateDiff(oldStateRoot, newStateRoot common.Hash, blockNumber int64, blockHash common.Hash) (*StateDiff, error)
+type Builder interface {
+	BuildStateDiff(oldStateRoot, newStateRoot common.Hash, blockNumber int64, blockHash common.Hash) (*StateDiff, error)
 }
 
-type stateDiffBuilder struct {
+type builder struct {
 	chainDB    ethdb.Database
 	trieDB     *trie.Database
 	cachedTrie *trie.Trie
 }
 
-func NewStateDiffBuilder(db ethdb.Database) *stateDiffBuilder {
-	return &stateDiffBuilder{
+func NewBuilder(db ethdb.Database) *builder {
+	return &builder{
 		chainDB: db,
 		trieDB:  trie.NewDatabase(db),
 	}
 }
 
-func (sdb *stateDiffBuilder) CreateStateDiff(oldStateRoot, newStateRoot common.Hash, blockNumber int64, blockHash common.Hash) (*StateDiff, error) {
+func (sdb *builder) BuildStateDiff(oldStateRoot, newStateRoot common.Hash, blockNumber int64, blockHash common.Hash) (*StateDiff, error) {
 	// Generate tries for old and new states
 	oldTrie, err := trie.New(oldStateRoot, sdb.trieDB)
 	if err != nil {
@@ -81,7 +100,7 @@ func (sdb *stateDiffBuilder) CreateStateDiff(oldStateRoot, newStateRoot common.H
 	}, nil
 }
 
-func (sdb *stateDiffBuilder) collectDiffNodes(a, b trie.NodeIterator) (map[common.Address]*state.Account, error) {
+func (sdb *builder) collectDiffNodes(a, b trie.NodeIterator) (map[common.Address]*state.Account, error) {
 	var diffAccounts map[common.Address]*state.Account
 	it, _ := trie.NewDifferenceIterator(a, b)
 
@@ -117,7 +136,7 @@ func (sdb *stateDiffBuilder) collectDiffNodes(a, b trie.NodeIterator) (map[commo
 	return diffAccounts, nil
 }
 
-func (sdb *stateDiffBuilder) buildDiffEventual(accounts map[common.Address]*state.Account, created bool) (map[common.Address]AccountDiffEventual, error) {
+func (sdb *builder) buildDiffEventual(accounts map[common.Address]*state.Account, created bool) (map[common.Address]AccountDiffEventual, error) {
 	accountDiffs := make(map[common.Address]AccountDiffEventual)
 	for addr, val := range accounts {
 		sr := val.Root
@@ -178,7 +197,7 @@ func (sdb *stateDiffBuilder) buildDiffEventual(accounts map[common.Address]*stat
 	return accountDiffs, nil
 }
 
-func (sdb *stateDiffBuilder) buildDiffIncremental(creations map[common.Address]*state.Account, deletions map[common.Address]*state.Account, updatedKeys *[]string) (map[common.Address]AccountDiffIncremental, error) {
+func (sdb *builder) buildDiffIncremental(creations map[common.Address]*state.Account, deletions map[common.Address]*state.Account, updatedKeys *[]string) (map[common.Address]AccountDiffIncremental, error) {
 	updatedAccounts := make(map[common.Address]AccountDiffIncremental)
 	for _, val := range *updatedKeys {
 		createdAcc := creations[common.HexToAddress(val)]
@@ -221,7 +240,7 @@ func (sdb *stateDiffBuilder) buildDiffIncremental(creations map[common.Address]*
 	return updatedAccounts, nil
 }
 
-func (sdb *stateDiffBuilder) buildStorageDiffsEventual(sr common.Hash, creation bool) (map[string]diffString, error) {
+func (sdb *builder) buildStorageDiffsEventual(sr common.Hash, creation bool) (map[string]diffString, error) {
 	log.Debug("Storage Root For Eventual Diff", "root", sr.Hex())
 	sTrie, err := trie.New(sr, sdb.trieDB)
 	if err != nil {
@@ -249,7 +268,7 @@ func (sdb *stateDiffBuilder) buildStorageDiffsEventual(sr common.Hash, creation 
 	return storageDiffs, nil
 }
 
-func (sdb *stateDiffBuilder) buildStorageDiffsIncremental(oldSR common.Hash, newSR common.Hash) (map[string]diffString, error) {
+func (sdb *builder) buildStorageDiffsIncremental(oldSR common.Hash, newSR common.Hash) (map[string]diffString, error) {
 	log.Debug("Storage Roots for Incremental Diff", "old", oldSR.Hex(), "new", newSR.Hex())
 	oldTrie, err := trie.New(oldSR, sdb.trieDB)
 	if err != nil {
@@ -285,7 +304,7 @@ func (sdb *stateDiffBuilder) buildStorageDiffsIncremental(oldSR common.Hash, new
 	return storageDiffs, nil
 }
 
-func (sdb *stateDiffBuilder) addressByPath(path []byte) (*common.Address, error) {
+func (sdb *builder) addressByPath(path []byte) (*common.Address, error) {
 	// db := core.PreimageTable(sdb.chainDb)
 	log.Debug("Looking up address from path", "path", common.ToHex(append([]byte("secure-key-"), path...)))
 	// if addrBytes,err := db.Get(path); err != nil {

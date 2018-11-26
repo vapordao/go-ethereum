@@ -20,6 +20,7 @@ package core
 import (
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/statediff"
 	"io"
 	"math/big"
 	mrand "math/rand"
@@ -72,6 +73,7 @@ type CacheConfig struct {
 	TrieCleanLimit int           // Memory allowance (MB) to use for caching trie nodes in memory
 	TrieDirtyLimit int           // Memory limit (MB) at which to start flushing dirty trie nodes to disk
 	TrieTimeLimit  time.Duration // Time limit after which to flush the current in-memory trie to disk
+	StateDiff      bool          // Whether or not to calculate and persist state diffs
 }
 
 // BlockChain represents the canonical chain given a database with a genesis
@@ -133,6 +135,8 @@ type BlockChain struct {
 
 	badBlocks      *lru.Cache              // Bad block cache
 	shouldPreserve func(*types.Block) bool // Function used to determine whether should preserve the given block.
+
+	diffExtractor statediff.Extractor // State diff processing interface
 }
 
 // NewBlockChain returns a fully initialised block chain using information
@@ -172,6 +176,10 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 	}
 	bc.SetValidator(NewBlockValidator(chainConfig, bc, engine))
 	bc.SetProcessor(NewStateProcessor(chainConfig, bc, engine))
+
+	if cacheConfig.StateDiff {
+		bc.diffExtractor = statediff.NewExtractor(db)
+	}
 
 	var err error
 	bc.hc, err = NewHeaderChain(db, chainConfig, engine, bc.getProcInterrupt)
@@ -1187,6 +1195,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []interface{}, []*ty
 			parent = chain[i-1]
 		}
 		state, err := state.New(parent.Root(), bc.stateCache)
+
 		if err != nil {
 			return i, events, coalescedLogs, err
 		}
@@ -1203,6 +1212,11 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []interface{}, []*ty
 			return i, events, coalescedLogs, err
 		}
 		proctime := time.Since(bstart)
+
+		// If extracting statediffs, do so now
+		if bc.cacheConfig.StateDiff {
+			bc.diffExtractor.Extract(*parent, *block)
+		}
 
 		// Write the block to the chain and get the status.
 		status, err := bc.WriteBlockWithState(block, receipts, state)

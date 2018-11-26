@@ -17,6 +17,7 @@
 package eth
 
 import (
+	"github.com/ethereum/go-ethereum/statediff"
 	"math/big"
 	"os"
 	"os/user"
@@ -128,6 +129,9 @@ type Config struct {
 	EWASMInterpreter string
 	// Type of the EVM interpreter ("" for default)
 	EVMInterpreter string
+
+	// Config for state diff building
+	StateDiff statediff.Config
 }
 
 type configMarshaling struct {
