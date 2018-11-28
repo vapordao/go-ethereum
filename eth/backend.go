@@ -159,7 +159,6 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 			TrieCleanLimit: config.TrieCleanCache,
 			TrieDirtyLimit: config.TrieDirtyCache,
 			TrieTimeLimit: config.TrieTimeout,
-			StateDiff: config.StateDiff.On,
 		}
 	)
 	eth.blockchain, err = core.NewBlockChain(chainDb, cacheConfig, eth.chainConfig, eth.engine, vmConfig, eth.shouldPreserve)
