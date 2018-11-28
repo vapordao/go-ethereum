@@ -21,7 +21,7 @@ package statediff
 
 import (
 	"errors"
-	"github.com/i-norden/go-ethereum/statediff/ipfs"
+	"github.com/ethereum/go-ethereum/statediff/ipfs"
 )
 
 type Publisher interface {
