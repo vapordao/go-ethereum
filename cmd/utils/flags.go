@@ -1134,13 +1134,6 @@ func SetShhConfig(ctx *cli.Context, stack *node.Node, cfg *whisper.Config) {
 	}
 }
 
-// Check if state diff flags are on and applies them to eth context
-func setStateDiff(ctx *cli.Context, cfg *eth.Config) {
-	if ctx.GlobalBool(StateDiffFlag.Name) && cfg.NoPruning && cfg.SyncMode == downloader.FullSync {
-		cfg.StateDiff.On = true
-	}
-}
-
 // SetEthConfig applies eth-related command line flags to the config.
 func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *eth.Config) {
 	// Avoid conflicting network flags
@@ -1175,10 +1168,6 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *eth.Config) {
 		Fatalf("--%s must be either 'full' or 'archive'", GCModeFlag.Name)
 	}
 	cfg.NoPruning = ctx.GlobalString(GCModeFlag.Name) == "archive"
-
-	if ctx.GlobalIsSet(StateDiffFlag.Name) {
-		setStateDiff(ctx, cfg)
-	}
 
 	if ctx.GlobalIsSet(CacheFlag.Name) || ctx.GlobalIsSet(CacheTrieFlag.Name) {
 		cfg.TrieCleanCache = ctx.GlobalInt(CacheFlag.Name) * ctx.GlobalInt(CacheTrieFlag.Name) / 100
