@@ -1,11 +1,12 @@
 package statediff
 
 import (
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/ethdb"
-	"fmt"
+	"github.com/ethereum/go-ethereum/p2p"
+	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/ethereum/go-ethereum/event"
+	"log"
 )
 
 type StateDiffService struct {
@@ -19,7 +20,7 @@ func NewStateDiffService(db ethdb.Database, blockChain *core.BlockChain) (*State
 	extractor, _ := NewExtractor(db, config)
 	return &StateDiffService{
 		blockchain: blockChain,
-		extractor: extractor,
+		extractor:  extractor,
 	}, nil
 }
 
@@ -32,23 +33,32 @@ func (StateDiffService) APIs() []rpc.API {
 	return []rpc.API{}
 }
 
-func (sds *StateDiffService) Start(server *p2p.Server) error {
-	fmt.Println("starting the state diff service")
-	blockChannel := make(chan core.ChainHeadEvent)
-	sds.blockchain.SubscribeChainHeadEvent(blockChannel)
+func (sds *StateDiffService) loop (sub event.Subscription, events chan core.ChainHeadEvent) {
+	defer sub.Unsubscribe()
+
 	for {
 		select {
-		case <-blockChannel:
-			headOfChainEvent := <-blockChannel
-			previousBlock := headOfChainEvent.Block
+		case ev, ok := <-events:
+			if !ok {
+				log.Fatalf("Error getting chain head event from subscription.")
+			}
+			log.Println("doing something with an event", ev)
+		    previousBlock := ev.Block
 			//TODO: figure out the best way to get the previous block
-			currentBlock := headOfChainEvent.Block
+			currentBlock := ev.Block
 			sds.extractor.ExtractStateDiff(*previousBlock, *currentBlock)
 		}
 	}
+
+}
+func (sds *StateDiffService) Start(server *p2p.Server) error {
+	events := make(chan core.ChainHeadEvent, 10)
+	sub := sds.blockchain.SubscribeChainHeadEvent(events)
+
+	go sds.loop(sub, events)
+
 	return nil
 }
 func (StateDiffService) Stop() error {
-	fmt.Println("stopping the state diff service")
 	return nil
 }
