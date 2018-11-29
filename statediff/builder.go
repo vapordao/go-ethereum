@@ -49,10 +49,13 @@ func (sdb *builder) BuildStateDiff(oldStateRoot, newStateRoot common.Hash, block
 	// Generate tries for old and new states
 	oldTrie, err := trie.New(oldStateRoot, sdb.trieDB)
 	if err != nil {
+		log.Debug("error creating oldTrie", err)
+		//getting this error: error creating oldTrie missing trie node ddfbb83966d870891aa47147269447a83564d1defaefad5f9844a3a3a2a08433 (path )
 		return nil, err
 	}
 	newTrie, err := trie.New(newStateRoot, sdb.trieDB)
 	if err != nil {
+		log.Debug("error creating newTrie", err)
 		return nil, err
 	}
 
@@ -61,6 +64,7 @@ func (sdb *builder) BuildStateDiff(oldStateRoot, newStateRoot common.Hash, block
 	newIt := newTrie.NodeIterator([]byte{})
 	creations, err := sdb.collectDiffNodes(oldIt, newIt)
 	if err != nil {
+		log.Debug("error collecting creation diff nodes", err)
 		return nil, err
 	}
 
@@ -69,6 +73,7 @@ func (sdb *builder) BuildStateDiff(oldStateRoot, newStateRoot common.Hash, block
 	newIt = newTrie.NodeIterator(make([]byte, 0))
 	deletions, err := sdb.collectDiffNodes(newIt, oldIt)
 	if err != nil {
+		log.Debug("error collecting deletion diff nodes", err)
 		return nil, err
 	}
 
@@ -80,14 +85,17 @@ func (sdb *builder) BuildStateDiff(oldStateRoot, newStateRoot common.Hash, block
 	// Build and return the statediff
 	updatedAccounts, err := sdb.buildDiffIncremental(creations, deletions, updatedKeys)
 	if err != nil {
+		log.Debug("error building diff incremental for updated", err)
 		return nil, err
 	}
 	createdAccounts, err := sdb.buildDiffEventual(creations, true)
 	if err != nil {
+		log.Debug("error building diff incremental for created", err)
 		return nil, err
 	}
 	deletedAccounts, err := sdb.buildDiffEventual(deletions, false)
 	if err != nil {
+		log.Debug("error building diff incremental for deleted", err)
 		return nil, err
 	}
 
