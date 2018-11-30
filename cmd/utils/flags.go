@@ -58,6 +58,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	whisper "github.com/ethereum/go-ethereum/whisper/whisperv6"
 	"gopkg.in/urfave/cli.v1"
+	"github.com/ethereum/go-ethereum/statediff"
 )
 
 var (
@@ -1133,13 +1134,6 @@ func SetShhConfig(ctx *cli.Context, stack *node.Node, cfg *whisper.Config) {
 	}
 }
 
-// Check if state diff flags are on and applies them to eth context
-func setStateDiff(ctx *cli.Context, cfg *eth.Config) {
-	if ctx.GlobalBool(StateDiffFlag.Name) && cfg.NoPruning && cfg.SyncMode == downloader.FullSync {
-		cfg.StateDiff.On = true
-	}
-}
-
 // SetEthConfig applies eth-related command line flags to the config.
 func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *eth.Config) {
 	// Avoid conflicting network flags
@@ -1174,10 +1168,6 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *eth.Config) {
 		Fatalf("--%s must be either 'full' or 'archive'", GCModeFlag.Name)
 	}
 	cfg.NoPruning = ctx.GlobalString(GCModeFlag.Name) == "archive"
-
-	if ctx.GlobalIsSet(StateDiffFlag.Name) {
-		setStateDiff(ctx, cfg)
-	}
 
 	if ctx.GlobalIsSet(CacheFlag.Name) || ctx.GlobalIsSet(CacheTrieFlag.Name) {
 		cfg.TrieCleanCache = ctx.GlobalInt(CacheFlag.Name) * ctx.GlobalInt(CacheTrieFlag.Name) / 100
@@ -1335,6 +1325,18 @@ func RegisterEthStatsService(stack *node.Node, url string) {
 		return ethstats.New(url, ethServ, lesServ)
 	}); err != nil {
 		Fatalf("Failed to register the Ethereum Stats service: %v", err)
+	}
+}
+
+func RegisterStateDiffService(stack *node.Node) {
+	if err := stack.Register(func(ctx *node.ServiceContext) (node.Service, error) {
+		var ethServ *eth.Ethereum
+		ctx.Service(&ethServ)
+		chainDb := ethServ.ChainDb()
+		blockChain := ethServ.BlockChain()
+		return statediff.NewStateDiffService(chainDb, blockChain)
+	}); err != nil {
+		Fatalf("Failed to register State Diff Service", err)
 	}
 }
 

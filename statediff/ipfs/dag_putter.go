@@ -22,9 +22,10 @@ package ipfs
 import (
 	"bytes"
 	"encoding/gob"
-	"github.com/i-norden/go-ethereum/statediff"
 
 	ipld "gx/ipfs/QmWi2BYBL5gJ3CiAiQchg6rn1A8iBsrWy51EYxvHVjFvLb/go-ipld-format"
+	"github.com/ethereum/go-ethereum/statediff"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 const (
