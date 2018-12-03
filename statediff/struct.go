@@ -56,31 +56,31 @@ func (sd *StateDiff) Encode() ([]byte, error) {
 }
 
 type AccountDiffEventual struct {
-	Nonce        diffUint64            `json:"nonce"         gencodec:"required"`
-	Balance      diffBigInt            `json:"balance"       gencodec:"required"`
+	Nonce        DiffUint64            `json:"nonce"         gencodec:"required"`
+	Balance      DiffBigInt            `json:"balance"       gencodec:"required"`
 	Code         []byte                `json:"code"          gencodec:"required"`
 	CodeHash     string                `json:"codeHash"      gencodec:"required"`
-	ContractRoot diffString            `json:"contractRoot"  gencodec:"required"`
-	Storage      map[string]diffString `json:"storage"       gencodec:"required"`
+	ContractRoot DiffString            `json:"contractRoot"  gencodec:"required"`
+	Storage      map[string]DiffString `json:"storage"       gencodec:"required"`
 }
 
 type AccountDiffIncremental struct {
-	Nonce        diffUint64            `json:"nonce"         gencodec:"required"`
-	Balance      diffBigInt            `json:"balance"       gencodec:"required"`
+	Nonce        DiffUint64            `json:"nonce"         gencodec:"required"`
+	Balance      DiffBigInt            `json:"balance"       gencodec:"required"`
 	CodeHash     string                `json:"codeHash"      gencodec:"required"`
-	ContractRoot diffString            `json:"contractRoot"  gencodec:"required"`
-	Storage      map[string]diffString `json:"storage"       gencodec:"required"`
+	ContractRoot DiffString            `json:"contractRoot"  gencodec:"required"`
+	Storage      map[string]DiffString `json:"storage"       gencodec:"required"`
 }
 
-type diffString struct {
+type DiffString struct {
 	NewValue *string `json:"newValue"  gencodec:"optional"`
 	OldValue *string `json:"oldValue"  gencodec:"optional"`
 }
-type diffUint64 struct {
+type DiffUint64 struct {
 	NewValue *uint64 `json:"newValue"  gencodec:"optional"`
 	OldValue *uint64 `json:"oldValue"  gencodec:"optional"`
 }
-type diffBigInt struct {
+type DiffBigInt struct {
 	NewValue *big.Int `json:"newValue"  gencodec:"optional"`
 	OldValue *big.Int `json:"oldValue"  gencodec:"optional"`
 }

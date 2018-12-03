@@ -17,7 +17,13 @@ type StateDiffService struct {
 
 func NewStateDiffService(db ethdb.Database, blockChain *core.BlockChain) (*StateDiffService, error) {
 	config := Config{}
-	extractor, _ := NewExtractor(db, config)
+	builder := NewBuilder(db)
+	publisher, err := NewPublisher(config)
+	if err != nil {
+		return nil, nil
+	}
+
+	extractor, _ := NewExtractor(builder, publisher)
 	return &StateDiffService{
 		blockchain: blockChain,
 		extractor:  extractor,

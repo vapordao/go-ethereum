@@ -21,7 +21,6 @@ package statediff
 
 import (
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethdb"
 )
 
 type Extractor interface {
@@ -29,27 +28,22 @@ type Extractor interface {
 }
 
 type extractor struct {
-	*builder   // Interface for building state diff objects from two blocks
-	*publisher // Interface for publishing state diff objects to a datastore (e.g. IPFS)
+	Builder Builder   // Interface for building state diff objects from two blocks
+	Publisher Publisher // Interface for publishing state diff objects to a datastore (e.g. IPFS)
 }
 
-func NewExtractor(db ethdb.Database, config Config) (*extractor, error) {
-	publisher, err := NewPublisher(config)
-	if err != nil {
-		return nil, err
-	}
-
+func NewExtractor(builder Builder, publisher Publisher) (*extractor, error) {
 	return &extractor{
-		builder: NewBuilder(db),
-		publisher: publisher,
+		Builder:   builder,
+		Publisher: publisher,
 	}, nil
 }
 
 func (e *extractor) ExtractStateDiff(parent, current types.Block) (string, error) {
-	stateDiff, err := e.BuildStateDiff(parent.Root(), current.Root(), current.Number().Int64(), current.Hash())
+	stateDiff, err := e.Builder.BuildStateDiff(parent.Root(), current.Root(), current.Number().Int64(), current.Hash())
 	if err != nil {
 		return "", err
 	}
 
-	return e.PublishStateDiff(stateDiff)
+	return e.Publisher.PublishStateDiff(stateDiff)
 }

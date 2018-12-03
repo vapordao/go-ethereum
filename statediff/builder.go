@@ -109,7 +109,7 @@ func (sdb *builder) BuildStateDiff(oldStateRoot, newStateRoot common.Hash, block
 }
 
 func (sdb *builder) collectDiffNodes(a, b trie.NodeIterator) (map[common.Address]*state.Account, error) {
-	var diffAccounts map[common.Address]*state.Account
+	var diffAccounts = make(map[common.Address]*state.Account)
 	it, _ := trie.NewDifferenceIterator(a, b)
 
 	for {
@@ -161,15 +161,15 @@ func (sdb *builder) buildDiffEventual(accounts map[common.Address]*state.Account
 		hexRoot := val.Root.Hex()
 
 		if created {
-			nonce := diffUint64{
+			nonce := DiffUint64{
 				NewValue: &val.Nonce,
 			}
 
-			balance := diffBigInt{
+			balance := DiffBigInt{
 				NewValue: val.Balance,
 			}
 
-			contractRoot := diffString{
+			contractRoot := DiffString{
 				NewValue: &hexRoot,
 			}
 			accountDiffs[addr] = AccountDiffEventual{
@@ -181,13 +181,13 @@ func (sdb *builder) buildDiffEventual(accounts map[common.Address]*state.Account
 				Storage:      storageDiffs,
 			}
 		} else {
-			nonce := diffUint64{
+			nonce := DiffUint64{
 				OldValue: &val.Nonce,
 			}
-			balance := diffBigInt{
+			balance := DiffBigInt{
 				OldValue: val.Balance,
 			}
-			contractRoot := diffString{
+			contractRoot := DiffString{
 				OldValue: &hexRoot,
 			}
 			accountDiffs[addr] = AccountDiffEventual{
@@ -214,12 +214,12 @@ func (sdb *builder) buildDiffIncremental(creations map[common.Address]*state.Acc
 			log.Error("Failed building storage diffs", "Address", val, "error", err)
 			return nil, err
 		} else {
-			nonce := diffUint64{
+			nonce := DiffUint64{
 				NewValue: &createdAcc.Nonce,
 				OldValue: &deletedAcc.Nonce,
 			}
 
-			balance := diffBigInt{
+			balance := DiffBigInt{
 				NewValue: createdAcc.Balance,
 				OldValue: deletedAcc.Balance,
 			}
@@ -227,7 +227,7 @@ func (sdb *builder) buildDiffIncremental(creations map[common.Address]*state.Acc
 
 			nHexRoot := createdAcc.Root.Hex()
 			oHexRoot := deletedAcc.Root.Hex()
-			contractRoot := diffString{
+			contractRoot := DiffString{
 				NewValue: &nHexRoot,
 				OldValue: &oHexRoot,
 			}
@@ -246,14 +246,14 @@ func (sdb *builder) buildDiffIncremental(creations map[common.Address]*state.Acc
 	return updatedAccounts, nil
 }
 
-func (sdb *builder) buildStorageDiffsEventual(sr common.Hash, creation bool) (map[string]diffString, error) {
+func (sdb *builder) buildStorageDiffsEventual(sr common.Hash, creation bool) (map[string]DiffString, error) {
 	log.Debug("Storage Root For Eventual Diff", "root", sr.Hex())
 	sTrie, err := trie.New(sr, sdb.trieDB)
 	if err != nil {
 		return nil, err
 	}
 	it := sTrie.NodeIterator(make([]byte, 0))
-	storageDiffs := make(map[string]diffString)
+	storageDiffs := make(map[string]DiffString)
 	for {
 		log.Debug("Iterating over state at path ", "path", pathToStr(it))
 		if it.Leaf() {
@@ -261,9 +261,9 @@ func (sdb *builder) buildStorageDiffsEventual(sr common.Hash, creation bool) (ma
 			path := pathToStr(it)
 			value := common.ToHex(it.LeafBlob())
 			if creation {
-				storageDiffs[path] = diffString{NewValue: &value}
+				storageDiffs[path] = DiffString{NewValue: &value}
 			} else {
-				storageDiffs[path] = diffString{OldValue: &value}
+				storageDiffs[path] = DiffString{OldValue: &value}
 			}
 		}
 		cont := it.Next(true)
@@ -274,7 +274,7 @@ func (sdb *builder) buildStorageDiffsEventual(sr common.Hash, creation bool) (ma
 	return storageDiffs, nil
 }
 
-func (sdb *builder) buildStorageDiffsIncremental(oldSR common.Hash, newSR common.Hash) (map[string]diffString, error) {
+func (sdb *builder) buildStorageDiffsIncremental(oldSR common.Hash, newSR common.Hash) (map[string]DiffString, error) {
 	log.Debug("Storage Roots for Incremental Diff", "old", oldSR.Hex(), "new", newSR.Hex())
 	oldTrie, err := trie.New(oldSR, sdb.trieDB)
 	if err != nil {
@@ -288,7 +288,7 @@ func (sdb *builder) buildStorageDiffsIncremental(oldSR common.Hash, newSR common
 	oldIt := oldTrie.NodeIterator(make([]byte, 0))
 	newIt := newTrie.NodeIterator(make([]byte, 0))
 	it, _ := trie.NewDifferenceIterator(oldIt, newIt)
-	storageDiffs := make(map[string]diffString)
+	storageDiffs := make(map[string]DiffString)
 	for {
 		if it.Leaf() {
 			log.Debug("Found leaf in storage", "path", pathToStr(it))
@@ -298,7 +298,7 @@ func (sdb *builder) buildStorageDiffsIncremental(oldSR common.Hash, newSR common
 				log.Error("Failed to look up value in oldTrie", "path", path, "error", err)
 			} else {
 				hexOldVal := common.ToHex(oldVal)
-				storageDiffs[path] = diffString{OldValue: &hexOldVal, NewValue: &value}
+				storageDiffs[path] = DiffString{OldValue: &hexOldVal, NewValue: &value}
 			}
 		}
 
