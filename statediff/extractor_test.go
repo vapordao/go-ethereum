@@ -18,3 +18,82 @@
 // operates on unique types, a lot of them are needed to check various features.
 
 package statediff_test
+
+import (
+	"github.com/onsi/ginkgo"
+	"github.com/ethereum/go-ethereum/statediff"
+	"github.com/onsi/gomega"
+	"github.com/ethereum/go-ethereum/core/types"
+	"math/rand"
+	"github.com/ethereum/go-ethereum/statediff/testhelpers"
+	"math/big"
+)
+var _ = ginkgo.Describe("Extractor", func() {
+	var publisher testhelpers.MockPublisher
+	var builder testhelpers.MockBuilder
+	var currentBlockNumber *big.Int
+	var parentBlock, currentBlock *types.Block
+	var expectedStateDiff statediff.StateDiff
+	var extractor statediff.Extractor
+	var err error
+
+	ginkgo.BeforeEach(func() {
+		publisher = testhelpers.MockPublisher{}
+		builder = testhelpers.MockBuilder{}
+		extractor, err = statediff.NewExtractor(&builder, &publisher)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
+
+		blockNumber := rand.Int63()
+		parentBlockNumber := big.NewInt(blockNumber - int64(1))
+		currentBlockNumber = big.NewInt(blockNumber)
+		parentBlock = types.NewBlock(&types.Header{Number: parentBlockNumber}, nil, nil, nil)
+		currentBlock = types.NewBlock(&types.Header{Number: currentBlockNumber}, nil, nil, nil)
+
+		expectedStateDiff = statediff.StateDiff{
+			BlockNumber:     blockNumber,
+			BlockHash:       currentBlock.Hash(),
+			CreatedAccounts: nil,
+			DeletedAccounts: nil,
+			UpdatedAccounts: nil,
+		}
+	})
+
+	ginkgo.It("builds a state diff struct", func() {
+		builder.SetStateDiffToBuild(&expectedStateDiff)
+
+		_, err = extractor.ExtractStateDiff(*parentBlock, *currentBlock)
+
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
+		gomega.Expect(builder.OldStateRoot).To(gomega.Equal(parentBlock.Root()))
+		gomega.Expect(builder.NewStateRoot).To(gomega.Equal(currentBlock.Root()))
+		gomega.Expect(builder.BlockNumber).To(gomega.Equal(currentBlockNumber.Int64()))
+		gomega.Expect(builder.BlockHash).To(gomega.Equal(currentBlock.Hash()))
+	})
+
+	ginkgo.It("returns an error if building the state diff fails", func() {
+		builder.SetBuilderError(testhelpers.MockError)
+
+		_, err = extractor.ExtractStateDiff(*parentBlock, *currentBlock)
+
+		gomega.Expect(err).To(gomega.HaveOccurred())
+		gomega.Expect(err).To(gomega.MatchError(testhelpers.MockError))
+	})
+
+	ginkgo.It("publishes the state diff struct", func() {
+		builder.SetStateDiffToBuild(&expectedStateDiff)
+
+		_, err = extractor.ExtractStateDiff(*parentBlock, *currentBlock)
+
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
+		gomega.Expect(publisher.StateDiff).To(gomega.Equal(&expectedStateDiff))
+	})
+
+	ginkgo.It("returns an error if publishing the diff fails", func() {
+		publisher.SetPublisherError(testhelpers.MockError)
+
+		_, err = extractor.ExtractStateDiff(*parentBlock, *currentBlock)
+
+		gomega.Expect(err).To(gomega.HaveOccurred())
+		gomega.Expect(err).To(gomega.MatchError(testhelpers.MockError))
+	})
+})
