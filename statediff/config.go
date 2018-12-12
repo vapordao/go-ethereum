@@ -30,7 +30,8 @@ type Config struct {
 type StateDiffMode int
 
 const (
-	IPLD  StateDiffMode = iota
+	CSV  StateDiffMode = iota
+	IPLD
 	LDB
 	SQL
 )
@@ -42,6 +43,8 @@ func (mode StateDiffMode) IsValid() bool {
 // String implements the stringer interface.
 func (mode StateDiffMode) String() string {
 	switch mode {
+	case CSV:
+		return "csv"
 	case IPLD:
 		return "ipfs"
 	case LDB:
@@ -55,6 +58,8 @@ func (mode StateDiffMode) String() string {
 
 func (mode StateDiffMode) MarshalText() ([]byte, error) {
 	switch mode {
+	case CSV:
+		return []byte("ipfs"), nil
 	case IPLD:
 		return []byte("ipfs"), nil
 	case LDB:
@@ -68,6 +73,8 @@ func (mode StateDiffMode) MarshalText() ([]byte, error) {
 
 func (mode *StateDiffMode) UnmarshalText(text []byte) error {
 	switch string(text) {
+	case "csv":
+		*mode = CSV
 	case "ipfs":
 		*mode = IPLD
 	case "ldb":
