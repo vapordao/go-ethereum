@@ -137,7 +137,7 @@ var _ = ginkgo.Describe("Publisher", func() {
 		gomega.Expect(lines[0]).To(gomega.Equal(p.Headers))
 	})
 
-	ginkgo.FIt("defaults to publishing CSV files in the current directory when no path is configured", func() {
+	ginkgo.It("defaults to publishing CSV files in the current directory when no path is configured", func() {
 		config := statediff.Config{}
 		publisher, err = p.NewPublisher(config)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())

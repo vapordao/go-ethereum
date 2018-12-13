@@ -116,7 +116,7 @@ func testChainGen(i int, block *core.BlockGen) {
 	}
 }
 
-var _ = ginkgo.FDescribe("", func() {
+var _ = ginkgo.Describe("", func() {
 	var (
 		block0Hash, block1Hash, block2Hash, block3Hash common.Hash
 		block0, block1, block2, block3                 *types.Block
