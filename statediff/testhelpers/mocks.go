@@ -2,8 +2,8 @@ package testhelpers
 
 import (
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/statediff"
 	"errors"
+	"github.com/ethereum/go-ethereum/statediff/builder"
 )
 
 var MockError = errors.New("mock error")
@@ -13,11 +13,11 @@ type MockBuilder struct {
 	NewStateRoot common.Hash
 	BlockNumber int64
 	BlockHash common.Hash
-	stateDiff *statediff.StateDiff
+	stateDiff *builder.StateDiff
 	builderError error
 }
 
-func (builder *MockBuilder) BuildStateDiff(oldStateRoot, newStateRoot common.Hash, blockNumber int64, blockHash common.Hash) (*statediff.StateDiff, error) {
+func (builder *MockBuilder) BuildStateDiff(oldStateRoot, newStateRoot common.Hash, blockNumber int64, blockHash common.Hash) (*builder.StateDiff, error) {
 	builder.OldStateRoot = oldStateRoot
 	builder.NewStateRoot = newStateRoot
 	builder.BlockNumber = blockNumber
@@ -26,7 +26,7 @@ func (builder *MockBuilder) BuildStateDiff(oldStateRoot, newStateRoot common.Has
 	return builder.stateDiff, builder.builderError
 }
 
-func (builder *MockBuilder) SetStateDiffToBuild(stateDiff *statediff.StateDiff) {
+func (builder *MockBuilder) SetStateDiffToBuild(stateDiff *builder.StateDiff) {
 	builder.stateDiff = stateDiff
 }
 
@@ -35,11 +35,11 @@ func (builder *MockBuilder) SetBuilderError(err error) {
 }
 
 type MockPublisher struct{
-	StateDiff *statediff.StateDiff
+	StateDiff *builder.StateDiff
 	publisherError error
 }
 
-func (publisher *MockPublisher) PublishStateDiff(sd *statediff.StateDiff) (string, error) {
+func (publisher *MockPublisher) PublishStateDiff(sd *builder.StateDiff) (string, error) {
 	publisher.StateDiff = sd
 	return "", publisher.publisherError
 }

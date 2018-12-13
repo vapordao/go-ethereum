@@ -1,4 +1,4 @@
-package statediff
+package service
 
 import (
 	"github.com/ethereum/go-ethereum/core"
@@ -7,23 +7,27 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethereum/go-ethereum/event"
 	"log"
+	e "github.com/ethereum/go-ethereum/statediff/extractor"
+	b "github.com/ethereum/go-ethereum/statediff/builder"
+	"github.com/ethereum/go-ethereum/statediff"
+	p "github.com/ethereum/go-ethereum/statediff/publisher"
 )
 
 type StateDiffService struct {
-	builder    *builder
-	extractor  *extractor
+	builder    *b.Builder
+	extractor  e.Extractor
 	blockchain *core.BlockChain
 }
 
 func NewStateDiffService(db ethdb.Database, blockChain *core.BlockChain) (*StateDiffService, error) {
-	config := Config{}
-	builder := NewBuilder(db)
-	publisher, err := NewPublisher(config)
+	config := statediff.Config{}
+	builder := b.NewBuilder(db)
+	publisher, err := p.NewPublisher(config)
 	if err != nil {
 		return nil, nil
 	}
 
-	extractor, _ := NewExtractor(builder, publisher)
+	extractor, _ := e.NewExtractor(builder, publisher)
 	return &StateDiffService{
 		blockchain: blockChain,
 		extractor:  extractor,

@@ -17,30 +17,31 @@
 // Contains a batch of utility type declarations used by the tests. As the node
 // operates on unique types, a lot of them are needed to check various features.
 
-package statediff_test
+package extractor_test
 
 import (
 	"github.com/onsi/ginkgo"
-	"github.com/ethereum/go-ethereum/statediff"
 	"github.com/onsi/gomega"
 	"github.com/ethereum/go-ethereum/core/types"
 	"math/rand"
 	"github.com/ethereum/go-ethereum/statediff/testhelpers"
 	"math/big"
+	e "github.com/ethereum/go-ethereum/statediff/extractor"
+	b "github.com/ethereum/go-ethereum/statediff/builder"
 )
 var _ = ginkgo.Describe("Extractor", func() {
 	var publisher testhelpers.MockPublisher
 	var builder testhelpers.MockBuilder
 	var currentBlockNumber *big.Int
 	var parentBlock, currentBlock *types.Block
-	var expectedStateDiff statediff.StateDiff
-	var extractor statediff.Extractor
+	var expectedStateDiff b.StateDiff
+	var extractor e.Extractor
 	var err error
 
 	ginkgo.BeforeEach(func() {
 		publisher = testhelpers.MockPublisher{}
 		builder = testhelpers.MockBuilder{}
-		extractor, err = statediff.NewExtractor(&builder, &publisher)
+		extractor, err = e.NewExtractor(&builder, &publisher)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 		blockNumber := rand.Int63()
@@ -49,7 +50,7 @@ var _ = ginkgo.Describe("Extractor", func() {
 		parentBlock = types.NewBlock(&types.Header{Number: parentBlockNumber}, nil, nil, nil)
 		currentBlock = types.NewBlock(&types.Header{Number: currentBlockNumber}, nil, nil, nil)
 
-		expectedStateDiff = statediff.StateDiff{
+		expectedStateDiff = b.StateDiff{
 			BlockNumber:     blockNumber,
 			BlockHash:       currentBlock.Hash(),
 			CreatedAccounts: nil,

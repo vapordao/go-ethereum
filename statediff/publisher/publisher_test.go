@@ -1,4 +1,4 @@
-package statediff_test
+package publisher_test
 
 import (
 	"github.com/onsi/ginkgo"
@@ -12,12 +12,14 @@ import (
 	"path/filepath"
 	"strings"
 	"strconv"
+	p "github.com/ethereum/go-ethereum/statediff/publisher"
+	"github.com/ethereum/go-ethereum/statediff/builder"
 )
 
 var _ = ginkgo.Describe("Publisher", func() {
 	ginkgo.Context("default CSV publisher", func() {
 		var (
-			publisher statediff.Publisher
+			publisher p.Publisher
 			err error
 			config = statediff.Config{
 				Path: "./test-",
@@ -36,21 +38,21 @@ var _ = ginkgo.Describe("Publisher", func() {
 			storagePath = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
 			oldStorage = "0x0"
 			newStorage = "0x03"
-			storage = map[string]statediff.DiffString{storagePath: {
+			storage = map[string]builder.DiffString{storagePath: {
 				NewValue: &newStorage,
 				OldValue: &oldStorage,
 			}}
 			address = common.HexToAddress("0xaE9BEa628c4Ce503DcFD7E305CaB4e29E7476592")
-			createdAccounts = map[common.Address]statediff.AccountDiffEventual{address: {
-				Nonce: statediff.DiffUint64{
+			createdAccounts = map[common.Address]builder.AccountDiffEventual{address: {
+				Nonce: builder.DiffUint64{
 					NewValue: &newNonceValue,
 					OldValue: &oldNonceValue,
 				},
-				Balance: statediff.DiffBigInt{
+				Balance: builder.DiffBigInt{
 					NewValue: big.NewInt(newBalanceValue),
 					OldValue: big.NewInt(oldBalanceValue),
 				},
-				ContractRoot: statediff.DiffString{
+				ContractRoot: builder.DiffString{
 					NewValue: &contractRoot,
 					OldValue: &contractRoot,
 				},
@@ -59,33 +61,33 @@ var _ = ginkgo.Describe("Publisher", func() {
 				Storage:  storage,
 			}}
 
-			updatedAccounts = map[common.Address]statediff.AccountDiffIncremental{address: {
-				Nonce:        statediff.DiffUint64{
+			updatedAccounts = map[common.Address]builder.AccountDiffIncremental{address: {
+				Nonce:        builder.DiffUint64{
 					NewValue: &newNonceValue,
 					OldValue: &oldNonceValue,
 				},
-				Balance:      statediff.DiffBigInt{
+				Balance:      builder.DiffBigInt{
 					NewValue: big.NewInt(newBalanceValue),
 					OldValue: big.NewInt(oldBalanceValue),
 				},
 				CodeHash:     codeHash,
-				ContractRoot: statediff.DiffString{
+				ContractRoot: builder.DiffString{
 					NewValue: &contractRoot,
 					OldValue: &contractRoot,
 				},
 				Storage: storage,
 			}}
 
-			deletedAccounts = map[common.Address]statediff.AccountDiffEventual{address: {
-				Nonce: statediff.DiffUint64{
+			deletedAccounts = map[common.Address]builder.AccountDiffEventual{address: {
+				Nonce: builder.DiffUint64{
 					NewValue: &newNonceValue,
 					OldValue: &oldNonceValue,
 				},
-				Balance: statediff.DiffBigInt{
+				Balance: builder.DiffBigInt{
 					NewValue: big.NewInt(newBalanceValue),
 					OldValue: big.NewInt(oldBalanceValue),
 				},
-				ContractRoot: statediff.DiffString{
+				ContractRoot: builder.DiffString{
 					NewValue: &contractRoot,
 					OldValue: &contractRoot,
 				},
@@ -94,7 +96,7 @@ var _ = ginkgo.Describe("Publisher", func() {
 				Storage:  storage,
 			}}
 
-			testStateDiff = statediff.StateDiff{
+			testStateDiff = builder.StateDiff{
 				BlockNumber:     blockNumber,
 				BlockHash:       common.HexToHash(blockHash),
 				CreatedAccounts: createdAccounts,
@@ -106,7 +108,7 @@ var _ = ginkgo.Describe("Publisher", func() {
 		var lines [][]string
 		var file *os.File
 		ginkgo.BeforeEach(func() {
-			publisher, err = statediff.NewPublisher(config)
+			publisher, err = p.NewPublisher(config)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 			_, err := publisher.PublishStateDiff(&testStateDiff)
@@ -127,7 +129,7 @@ var _ = ginkgo.Describe("Publisher", func() {
 
 		ginkgo.It("persists the column headers to a CSV file", func() {
 			gomega.Expect(len(lines) > 1).To(gomega.BeTrue())
-			gomega.Expect(lines[0]).To(gomega.Equal(statediff.Headers))
+			gomega.Expect(lines[0]).To(gomega.Equal(p.Headers))
 		})
 
 		ginkgo.It("persists the created account diffs to a CSV file", func() {
@@ -203,4 +205,3 @@ func getTestCSVFiles(rootPath string) []string{
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	return files
 }
-

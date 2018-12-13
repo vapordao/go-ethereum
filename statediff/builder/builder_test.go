@@ -17,7 +17,7 @@
 // Contains a batch of utility type declarations used by the tests. As the node
 // operates on unique types, a lot of them are needed to check various features.
 
-package statediff_test
+package builder_test
 
 import (
 	"github.com/onsi/ginkgo"
@@ -29,8 +29,8 @@ import (
 	"github.com/ethereum/go-ethereum/consensus/ethash"
 	"math/big"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/statediff"
 	"github.com/onsi/gomega"
+	b "github.com/ethereum/go-ethereum/statediff/builder"
 )
 
 
@@ -50,8 +50,8 @@ var (
 	contractCode = common.Hex2Bytes("606060405260cc8060106000396000f360606040526000357c01000000000000000000000000000000000000000000000000000000009004806360cd2685146041578063c16431b914606b57603f565b005b6055600480803590602001909190505060a9565b6040518082815260200191505060405180910390f35b60886004808035906020019091908035906020019091905050608a565b005b80600060005083606481101560025790900160005b50819055505b5050565b6000600060005082606481101560025790900160005b5054905060c7565b91905056")
 	contractAddr common.Address
 
-	emptyAccountDiffEventualMap = make(map[common.Address]statediff.AccountDiffEventual)
-	emptyAccountDiffIncrementalMap = make(map[common.Address]statediff.AccountDiffIncremental)
+	emptyAccountDiffEventualMap = make(map[common.Address]b.AccountDiffEventual)
+	emptyAccountDiffIncrementalMap = make(map[common.Address]b.AccountDiffIncremental)
 )
 /*
 contract test {
@@ -121,10 +121,10 @@ var _ = ginkgo.FDescribe("", func() {
 	var (
 		block0Hash, block1Hash, block2Hash, block3Hash common.Hash
 		block0, block1, block2, block3 *types.Block
-		builder statediff.Builder
+		builder b.Builder
 		miningReward = int64(3000000000000000000)
 		burnAddress = common.HexToAddress("0x0")
-		diff *statediff.StateDiff
+		diff *b.StateDiff
 		err error
 	)
 
@@ -139,11 +139,11 @@ var _ = ginkgo.FDescribe("", func() {
 		block1 = blocks[block1Hash]
 		block2 = blocks[block2Hash]
 		block3 = blocks[block3Hash]
-		builder = statediff.NewBuilder(testdb)
+		builder = b.NewBuilder(testdb)
 	})
 
 	ginkgo.It("returns empty account diff collections when the state root hasn't changed", func() {
-		expectedDiff := statediff.StateDiff{
+		expectedDiff := b.StateDiff{
 			BlockNumber:     block0.Number().Int64(),
 			BlockHash:       block0Hash,
 			CreatedAccounts: emptyAccountDiffEventualMap,
@@ -177,7 +177,7 @@ var _ = ginkgo.FDescribe("", func() {
 		})
 
 		ginkgo.It("returns balance diffs for updated accounts", func() {
-			expectedBankBalanceDiff := statediff.DiffBigInt{
+			expectedBankBalanceDiff := b.DiffBigInt{
 				NewValue: big.NewInt(testBankFunds.Int64() - balanceChange),
 				OldValue: testBankFunds,
 			}
@@ -187,12 +187,12 @@ var _ = ginkgo.FDescribe("", func() {
 		})
 
 		ginkgo.It("returns balance diffs for new accounts", func() {
-			expectedAccount1BalanceDiff := statediff.DiffBigInt{
+			expectedAccount1BalanceDiff := b.DiffBigInt{
 				NewValue: big.NewInt(balanceChange),
 				OldValue: nil,
 			}
 
-			expectedBurnAddrBalanceDiff := statediff.DiffBigInt{
+			expectedBurnAddrBalanceDiff := b.DiffBigInt{
 				NewValue: big.NewInt(miningReward),
 				OldValue: nil,
 			}
@@ -228,17 +228,17 @@ var _ = ginkgo.FDescribe("", func() {
 		})
 
 		ginkgo.It("returns balance diffs for updated accounts", func() {
-			expectedBankBalanceDiff := statediff.DiffBigInt{
+			expectedBankBalanceDiff := b.DiffBigInt{
 				NewValue: big.NewInt(block1BankBalance - balanceChange),
 				OldValue: big.NewInt(block1BankBalance),
 			}
 
-			expectedAccount1BalanceDiff := statediff.DiffBigInt{
+			expectedAccount1BalanceDiff := b.DiffBigInt{
 				NewValue: big.NewInt(block1Account1Balance - balanceChange + balanceChange),
 				OldValue: big.NewInt(block1Account1Balance),
 			}
 
-			expectedBurnBalanceDiff := statediff.DiffBigInt{
+			expectedBurnBalanceDiff := b.DiffBigInt{
 				NewValue: big.NewInt(miningReward + miningReward),
 				OldValue: big.NewInt(miningReward),
 			}
@@ -250,12 +250,12 @@ var _ = ginkgo.FDescribe("", func() {
 		})
 
 		ginkgo.It("returns balance diffs for new accounts", func() {
-			expectedAccount2BalanceDiff := statediff.DiffBigInt{
+			expectedAccount2BalanceDiff := b.DiffBigInt{
 				NewValue: big.NewInt(balanceChange),
 				OldValue: nil,
 			}
 
-			expectedContractBalanceDiff := statediff.DiffBigInt{
+			expectedContractBalanceDiff := b.DiffBigInt{
 				NewValue: big.NewInt(0),
 				OldValue: nil,
 			}
@@ -290,23 +290,23 @@ var _ = ginkgo.FDescribe("", func() {
 
 		ginkgo.It("returns balance, storage and nonce diffs for updated accounts", func() {
 			block2Account2Balance := int64(1000)
-			expectedAcct2BalanceDiff := statediff.DiffBigInt{
+			expectedAcct2BalanceDiff := b.DiffBigInt{
 				NewValue: big.NewInt(block2Account2Balance + miningReward),
 				OldValue: big.NewInt(block2Account2Balance),
 			}
 
-			expectedContractStorageDiff := make(map[string]statediff.DiffString)
+			expectedContractStorageDiff := make(map[string]b.DiffString)
 			newVal := "0x03"
 			oldVal := "0x0"
 			path := "0x405787fa12a823e0f2b7631cc41b3ba8828b3321ca811111fa75cd3aa3bb5ace"
-			expectedContractStorageDiff[path] = statediff.DiffString{
+			expectedContractStorageDiff[path] = b.DiffString{
 				NewValue: &newVal,
 				OldValue: &oldVal,
 			}
 
 			oldNonce := uint64(2)
 			newNonce := uint64(3)
-			expectedBankNonceDiff := statediff.DiffUint64{
+			expectedBankNonceDiff := b.DiffUint64{
 				NewValue: &newNonce,
 				OldValue: &oldNonce,
 			}
