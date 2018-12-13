@@ -17,7 +17,7 @@
 // Contains a batch of utility type declarations used by the tests. As the node
 // operates on unique types, a lot of them are needed to check various features.
 
-package statediff
+package builder
 
 import (
 	"github.com/ethereum/go-ethereum/common"
@@ -50,7 +50,6 @@ func (sdb *builder) BuildStateDiff(oldStateRoot, newStateRoot common.Hash, block
 	oldTrie, err := trie.New(oldStateRoot, sdb.trieDB)
 	if err != nil {
 		log.Debug("error creating oldTrie", err)
-		//getting this error: error creating oldTrie missing trie node ddfbb83966d870891aa47147269447a83564d1defaefad5f9844a3a3a2a08433 (path )
 		return nil, err
 	}
 	newTrie, err := trie.New(newStateRoot, sdb.trieDB)

@@ -17,7 +17,7 @@
 // Contains a batch of utility type declarations used by the tests. As the node
 // operates on unique types, a lot of them are needed to check various features.
 
-package statediff
+package publisher
 
 import (
 	"os"
@@ -25,14 +25,16 @@ import (
 	"time"
 	"strconv"
 	"strings"
+	"github.com/ethereum/go-ethereum/statediff/builder"
+	"github.com/ethereum/go-ethereum/statediff"
 )
 
 type Publisher interface {
-	PublishStateDiff(sd *StateDiff) (string, error)
+	PublishStateDiff(sd *builder.StateDiff) (string, error)
 }
 
 type publisher struct {
-	Config Config
+	Config statediff.Config
 }
 
 var (
@@ -51,22 +53,22 @@ var (
 	updatedAccountAction = "updated"
 )
 
-func NewPublisher(config Config) (*publisher, error) {
+func NewPublisher(config statediff.Config) (*publisher, error) {
 	return &publisher{
 		Config: config,
 	}, nil
 }
 
-func (p *publisher) PublishStateDiff(sd *StateDiff) (string, error) {
+func (p *publisher) PublishStateDiff(sd *builder.StateDiff) (string, error) {
 	switch p.Config.Mode {
-	case CSV:
+	case statediff.CSV:
 		return "", p.publishStateDiffToCSV(*sd)
 	default:
 		return "", p.publishStateDiffToCSV(*sd)
 	}
 }
 
-func (p *publisher) publishStateDiffToCSV(sd StateDiff) error {
+func (p *publisher) publishStateDiffToCSV(sd builder.StateDiff) error {
 	now := time.Now()
 	timeStamp := now.Format(timeStampFormat)
 	filePath := p.Config.Path + timeStamp + ".csv"
@@ -102,7 +104,7 @@ func (p *publisher) publishStateDiffToCSV(sd StateDiff) error {
 	return nil
 }
 
-func accumulateUpdatedAccountRows(sd StateDiff) [][]string {
+func accumulateUpdatedAccountRows(sd builder.StateDiff) [][]string {
 	var updatedAccountRows [][]string
 	for _, accountDiff := range sd.UpdatedAccounts {
 		formattedAccountData := formatAccountDiffIncremental(accountDiff, sd, updatedAccountAction)
@@ -113,7 +115,7 @@ func accumulateUpdatedAccountRows(sd StateDiff) [][]string {
 	return updatedAccountRows
 }
 
-func accumulateDeletedAccountRows(sd StateDiff) [][]string {
+func accumulateDeletedAccountRows(sd builder.StateDiff) [][]string {
 	var deletedAccountRows [][]string
 	for _, accountDiff := range sd.DeletedAccounts {
 		formattedAccountData := formatAccountDiffEventual(accountDiff, sd, deletedAccountAction)
@@ -124,7 +126,7 @@ func accumulateDeletedAccountRows(sd StateDiff) [][]string {
 	return deletedAccountRows
 }
 
-func accumulateCreatedAccountRows(sd StateDiff) [][]string {
+func accumulateCreatedAccountRows(sd builder.StateDiff) [][]string {
 	var createdAccountRows [][]string
 	for _, accountDiff := range sd.CreatedAccounts {
 		formattedAccountData := formatAccountDiffEventual(accountDiff, sd, createdAccountAction)
@@ -135,7 +137,7 @@ func accumulateCreatedAccountRows(sd StateDiff) [][]string {
 	return createdAccountRows
 }
 
-func formatAccountDiffEventual(accountDiff AccountDiffEventual, sd StateDiff, accountAction string) []string {
+func formatAccountDiffEventual(accountDiff builder.AccountDiffEventual, sd builder.StateDiff, accountAction string) []string {
 	oldContractRoot := accountDiff.ContractRoot.OldValue
 	newContractRoot := accountDiff.ContractRoot.NewValue
 	var storageDiffPaths []string
@@ -159,7 +161,7 @@ func formatAccountDiffEventual(accountDiff AccountDiffEventual, sd StateDiff, ac
 	return formattedAccountData
 }
 
-func formatAccountDiffIncremental(accountDiff AccountDiffIncremental, sd StateDiff, accountAction string) []string {
+func formatAccountDiffIncremental(accountDiff builder.AccountDiffIncremental, sd builder.StateDiff, accountAction string) []string {
 	oldContractRoot := accountDiff.ContractRoot.OldValue
 	newContractRoot := accountDiff.ContractRoot.NewValue
 	var storageDiffPaths []string
