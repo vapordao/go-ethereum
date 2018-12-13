@@ -2,206 +2,168 @@ package publisher_test
 
 import (
 	"github.com/onsi/ginkgo"
-	"github.com/ethereum/go-ethereum/statediff"
 	"github.com/onsi/gomega"
 	"os"
 	"encoding/csv"
-	"github.com/ethereum/go-ethereum/common"
-	"math/rand"
-	"math/big"
 	"path/filepath"
-	"strings"
 	"strconv"
 	p "github.com/ethereum/go-ethereum/statediff/publisher"
+	"github.com/ethereum/go-ethereum/statediff/testhelpers"
+	"io/ioutil"
 	"github.com/ethereum/go-ethereum/statediff/builder"
+	"github.com/ethereum/go-ethereum/statediff"
 )
 
 var _ = ginkgo.Describe("Publisher", func() {
-	ginkgo.Context("default CSV publisher", func() {
-		var (
-			publisher p.Publisher
-			err error
-			config = statediff.Config{
-				Path: "./test-",
-			}
-		)
+	var (
+		tempDir = os.TempDir()
+		testFilePrefix = "test-statediff"
+		publisher p.Publisher
+		dir string
+		err error
+	)
 
-		var (
-			blockNumber = rand.Int63()
-			blockHash = "0xfa40fbe2d98d98b3363a778d52f2bcd29d6790b9b3f3cab2b167fd12d3550f73"
-			codeHash = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
-			oldNonceValue = rand.Uint64()
-			newNonceValue = oldNonceValue + 1
-			oldBalanceValue = rand.Int63()
-			newBalanceValue = oldBalanceValue - 1
-			contractRoot = "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"
-			storagePath = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
-			oldStorage = "0x0"
-			newStorage = "0x03"
-			storage = map[string]builder.DiffString{storagePath: {
-				NewValue: &newStorage,
-				OldValue: &oldStorage,
-			}}
-			address = common.HexToAddress("0xaE9BEa628c4Ce503DcFD7E305CaB4e29E7476592")
-			createdAccounts = map[common.Address]builder.AccountDiffEventual{address: {
-				Nonce: builder.DiffUint64{
-					NewValue: &newNonceValue,
-					OldValue: &oldNonceValue,
-				},
-				Balance: builder.DiffBigInt{
-					NewValue: big.NewInt(newBalanceValue),
-					OldValue: big.NewInt(oldBalanceValue),
-				},
-				ContractRoot: builder.DiffString{
-					NewValue: &contractRoot,
-					OldValue: &contractRoot,
-				},
-				Code:     []byte("created account code"),
-				CodeHash: codeHash,
-				Storage:  storage,
-			}}
+	var expectedCreatedAccountRow = []string{
+		strconv.FormatInt(testhelpers.BlockNumber, 10),
+		testhelpers.BlockHash,
+		"created",
+		"created account code",
+		testhelpers.CodeHash,
+		strconv.FormatUint(testhelpers.OldNonceValue, 10),
+		strconv.FormatUint(testhelpers.NewNonceValue, 10),
+		strconv.FormatInt(testhelpers.OldBalanceValue, 10),
+		strconv.FormatInt(testhelpers.NewBalanceValue, 10),
+		testhelpers.ContractRoot,
+		testhelpers.ContractRoot,
+		testhelpers.StoragePath,
+	}
 
-			updatedAccounts = map[common.Address]builder.AccountDiffIncremental{address: {
-				Nonce:        builder.DiffUint64{
-					NewValue: &newNonceValue,
-					OldValue: &oldNonceValue,
-				},
-				Balance:      builder.DiffBigInt{
-					NewValue: big.NewInt(newBalanceValue),
-					OldValue: big.NewInt(oldBalanceValue),
-				},
-				CodeHash:     codeHash,
-				ContractRoot: builder.DiffString{
-					NewValue: &contractRoot,
-					OldValue: &contractRoot,
-				},
-				Storage: storage,
-			}}
+	var expectedUpdatedAccountRow = []string{
+		strconv.FormatInt(testhelpers.BlockNumber, 10),
+		testhelpers.BlockHash,
+		"updated",
+		"",
+		testhelpers.CodeHash,
+		strconv.FormatUint(testhelpers.OldNonceValue, 10),
+		strconv.FormatUint(testhelpers.NewNonceValue, 10),
+		strconv.FormatInt(testhelpers.OldBalanceValue, 10),
+		strconv.FormatInt(testhelpers.NewBalanceValue, 10),
+		testhelpers.ContractRoot,
+		testhelpers.ContractRoot,
+		testhelpers.StoragePath,
+	}
 
-			deletedAccounts = map[common.Address]builder.AccountDiffEventual{address: {
-				Nonce: builder.DiffUint64{
-					NewValue: &newNonceValue,
-					OldValue: &oldNonceValue,
-				},
-				Balance: builder.DiffBigInt{
-					NewValue: big.NewInt(newBalanceValue),
-					OldValue: big.NewInt(oldBalanceValue),
-				},
-				ContractRoot: builder.DiffString{
-					NewValue: &contractRoot,
-					OldValue: &contractRoot,
-				},
-				Code:     []byte("deleted account code"),
-				CodeHash: codeHash,
-				Storage:  storage,
-			}}
+	var expectedDeletedAccountRow = []string{
+		strconv.FormatInt(testhelpers.BlockNumber, 10),
+		testhelpers.BlockHash,
+		"deleted",
+		"deleted account code",
+		testhelpers.CodeHash,
+		strconv.FormatUint(testhelpers.OldNonceValue, 10),
+		strconv.FormatUint(testhelpers.NewNonceValue, 10),
+		strconv.FormatInt(testhelpers.OldBalanceValue, 10),
+		strconv.FormatInt(testhelpers.NewBalanceValue, 10),
+		testhelpers.ContractRoot,
+		testhelpers.ContractRoot,
+		testhelpers.StoragePath,
+	}
 
-			testStateDiff = builder.StateDiff{
-				BlockNumber:     blockNumber,
-				BlockHash:       common.HexToHash(blockHash),
-				CreatedAccounts: createdAccounts,
-				DeletedAccounts: deletedAccounts,
-				UpdatedAccounts: updatedAccounts,
-			}
-		)
+	ginkgo.BeforeEach(func() {
+		dir, err = ioutil.TempDir(tempDir, testFilePrefix)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
+		config := statediff.Config{
+			Path: dir,
+			Mode: statediff.CSV,
+		}
+		publisher, err = p.NewPublisher(config)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
+	})
 
-		var lines [][]string
-		var file *os.File
-		ginkgo.BeforeEach(func() {
-			publisher, err = p.NewPublisher(config)
-			gomega.Expect(err).NotTo(gomega.HaveOccurred())
+	ginkgo.AfterEach(func() {
+		os.RemoveAll(dir)
+	})
 
-			_, err := publisher.PublishStateDiff(&testStateDiff)
-			gomega.Expect(err).NotTo(gomega.HaveOccurred())
+	ginkgo.It("persists the column headers to a CSV file", func() {
+		_, err = publisher.PublishStateDiff(&testhelpers.TestStateDiff)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
-			filePaths := getTestCSVFiles(".")
-			file, err = os.Open(filePaths[0])
-			gomega.Expect(err).NotTo(gomega.HaveOccurred())
+		file, err := getTestDiffFile(dir)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
-			defer file.Close()
+		lines, err := csv.NewReader(file).ReadAll()
+		gomega.Expect(len(lines) > 1).To(gomega.BeTrue())
+		gomega.Expect(lines[0]).To(gomega.Equal(p.Headers))
+	})
 
-			lines, err = csv.NewReader(file).ReadAll()
-		})
+	ginkgo.It("persists the created, upated and deleted account diffs to a CSV file", func() {
+		_, err = publisher.PublishStateDiff(&testhelpers.TestStateDiff)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
-		ginkgo.AfterEach(func() {
-			os.Remove(file.Name())
-		})
+		file, err := getTestDiffFile(dir)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
-		ginkgo.It("persists the column headers to a CSV file", func() {
-			gomega.Expect(len(lines) > 1).To(gomega.BeTrue())
-			gomega.Expect(lines[0]).To(gomega.Equal(p.Headers))
-		})
+		lines, err := csv.NewReader(file).ReadAll()
+		gomega.Expect(len(lines) > 3).To(gomega.BeTrue())
+		gomega.Expect(lines[1]).To(gomega.Equal(expectedCreatedAccountRow))
+		gomega.Expect(lines[2]).To(gomega.Equal(expectedUpdatedAccountRow))
+		gomega.Expect(lines[3]).To(gomega.Equal(expectedDeletedAccountRow))
+	})
 
-		ginkgo.It("persists the created account diffs to a CSV file", func() {
-			expectedCreatedAccountRow := []string{
-				strconv.FormatInt(blockNumber, 10),
-				blockHash,
-				"created",
-				"created account code",
-				codeHash,
-				strconv.FormatUint(oldNonceValue, 10),
-				strconv.FormatUint(newNonceValue, 10),
-				strconv.FormatInt(oldBalanceValue, 10),
-				strconv.FormatInt(newBalanceValue, 10),
-				contractRoot,
-				contractRoot,
-				storagePath,
-			}
+	ginkgo.It("creates an empty CSV when there is no diff", func() {
+		emptyDiff := builder.StateDiff{}
+		_, err = publisher.PublishStateDiff(&emptyDiff)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
-			gomega.Expect(len(lines) > 1).To(gomega.BeTrue())
-			gomega.Expect(lines[1]).To(gomega.Equal(expectedCreatedAccountRow))
-		})
+		file, err := getTestDiffFile(dir)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
-		ginkgo.It("persists the updated account diffs to a CSV file", func() {
-			expectedUpdatedAccountRow := []string{
-				strconv.FormatInt(blockNumber, 10),
-				blockHash,
-				"updated",
-				"",
-				codeHash,
-				strconv.FormatUint(oldNonceValue, 10),
-				strconv.FormatUint(newNonceValue, 10),
-				strconv.FormatInt(oldBalanceValue, 10),
-				strconv.FormatInt(newBalanceValue, 10),
-				contractRoot,
-				contractRoot,
-				storagePath,
-			}
+		lines, err := csv.NewReader(file).ReadAll()
+		gomega.Expect(len(lines)).To(gomega.Equal(1))
+	})
 
-			gomega.Expect(len(lines) > 2).To(gomega.BeTrue())
-			gomega.Expect(lines[2]).To(gomega.Equal(expectedUpdatedAccountRow))
-		})
+	ginkgo.It("defaults to publishing state diffs to a CSV file when no mode is configured", func() {
+		config := statediff.Config{Path: dir}
+		publisher, err = p.NewPublisher(config)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
-		ginkgo.It("persists the deleted account diffs to a CSV file", func() {
-			expectedDeletedAccountRow := []string{
-				strconv.FormatInt(blockNumber, 10),
-				blockHash,
-				"deleted",
-				"deleted account code",
-				codeHash,
-				strconv.FormatUint(oldNonceValue, 10),
-				strconv.FormatUint(newNonceValue, 10),
-				strconv.FormatInt(oldBalanceValue, 10),
-				strconv.FormatInt(newBalanceValue, 10),
-				contractRoot,
-				contractRoot,
-				storagePath,
-			}
+		_, err = publisher.PublishStateDiff(&testhelpers.TestStateDiff)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
-			gomega.Expect(len(lines) > 3).To(gomega.BeTrue())
-			gomega.Expect(lines[3]).To(gomega.Equal(expectedDeletedAccountRow))
-		})
+		file, err := getTestDiffFile(dir)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
+
+		lines, err := csv.NewReader(file).ReadAll()
+		gomega.Expect(len(lines)).To(gomega.Equal(4))
+		gomega.Expect(lines[0]).To(gomega.Equal(p.Headers))
+	})
+
+	ginkgo.FIt("defaults to publishing CSV files in the current directory when no path is configured", func() {
+		config := statediff.Config{}
+		publisher, err = p.NewPublisher(config)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
+
+		err := os.Chdir(dir)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
+
+		_, err = publisher.PublishStateDiff(&testhelpers.TestStateDiff)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
+
+		file, err := getTestDiffFile(dir)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
+
+		lines, err := csv.NewReader(file).ReadAll()
+		gomega.Expect(len(lines)).To(gomega.Equal(4))
+		gomega.Expect(lines[0]).To(gomega.Equal(p.Headers))
 	})
 })
 
-func getTestCSVFiles(rootPath string) []string{
-	var files []string
-	err := filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
-		if strings.HasPrefix(path, "test-") {
-			files = append(files, path)
-		}
-		return nil
-	})
+func getTestDiffFile(dir string) (*os.File, error) {
+	files, err := ioutil.ReadDir(dir)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
-	return files
+	gomega.Expect(len(files) > 0).To(gomega.BeTrue())
+
+	fileName := files[0].Name()
+	filePath := filepath.Join(dir, fileName)
+
+	return os.Open(filePath)
 }
