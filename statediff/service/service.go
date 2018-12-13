@@ -3,14 +3,14 @@ package service
 import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/ethereum/go-ethereum/event"
-	"log"
-	e "github.com/ethereum/go-ethereum/statediff/extractor"
-	b "github.com/ethereum/go-ethereum/statediff/builder"
 	"github.com/ethereum/go-ethereum/statediff"
+	b "github.com/ethereum/go-ethereum/statediff/builder"
+	e "github.com/ethereum/go-ethereum/statediff/extractor"
 	p "github.com/ethereum/go-ethereum/statediff/publisher"
+	"log"
 )
 
 type StateDiffService struct {
@@ -43,7 +43,7 @@ func (StateDiffService) APIs() []rpc.API {
 	return []rpc.API{}
 }
 
-func (sds *StateDiffService) loop (sub event.Subscription, events chan core.ChainHeadEvent) {
+func (sds *StateDiffService) loop(sub event.Subscription, events chan core.ChainHeadEvent) {
 	defer sub.Unsubscribe()
 
 	for {
@@ -53,7 +53,7 @@ func (sds *StateDiffService) loop (sub event.Subscription, events chan core.Chai
 				log.Fatalf("Error getting chain head event from subscription.")
 			}
 			log.Println("doing something with an event", ev)
-		    previousBlock := ev.Block
+			previousBlock := ev.Block
 			//TODO: figure out the best way to get the previous block
 			currentBlock := ev.Block
 			sds.extractor.ExtractStateDiff(*previousBlock, *currentBlock)

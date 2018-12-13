@@ -20,19 +20,18 @@
 package builder_test
 
 import (
-	"github.com/onsi/ginkgo"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus/ethash"
-	"math/big"
+	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/onsi/gomega"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/params"
 	b "github.com/ethereum/go-ethereum/statediff/builder"
+	"github.com/onsi/ginkgo"
+	"github.com/onsi/gomega"
+	"math/big"
 )
-
 
 var (
 	testdb = ethdb.NewMemDatabase()
@@ -40,7 +39,7 @@ var (
 	testBankKey, _  = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
 	testBankAddress = crypto.PubkeyToAddress(testBankKey.PublicKey) //0x71562b71999873DB5b286dF957af199Ec94617F7
 	testBankFunds   = big.NewInt(100000000)
-	genesis      = core.GenesisBlockForTesting(testdb, testBankAddress, testBankFunds)
+	genesis         = core.GenesisBlockForTesting(testdb, testBankAddress, testBankFunds)
 
 	account1Key, _ = crypto.HexToECDSA("8a1f9a8f95be41cd7ccb6168179afb4504aefe388d1e14474d32c45c72ce7b7a")
 	account2Key, _ = crypto.HexToECDSA("49a7b37aa6f6645917e7b807e9d1c00d4fa71f18343b0d4122a4d2df64dd6fee")
@@ -50,9 +49,10 @@ var (
 	contractCode = common.Hex2Bytes("606060405260cc8060106000396000f360606040526000357c01000000000000000000000000000000000000000000000000000000009004806360cd2685146041578063c16431b914606b57603f565b005b6055600480803590602001909190505060a9565b6040518082815260200191505060405180910390f35b60886004808035906020019091908035906020019091905050608a565b005b80600060005083606481101560025790900160005b50819055505b5050565b6000600060005082606481101560025790900160005b5054905060c7565b91905056")
 	contractAddr common.Address
 
-	emptyAccountDiffEventualMap = make(map[common.Address]b.AccountDiffEventual)
+	emptyAccountDiffEventualMap    = make(map[common.Address]b.AccountDiffEventual)
 	emptyAccountDiffIncrementalMap = make(map[common.Address]b.AccountDiffIncremental)
 )
+
 /*
 contract test {
 
@@ -67,7 +67,6 @@ contract test {
     }
 }
 */
-
 
 // makeChain creates a chain of n blocks starting at and including parent.
 // the returned hash chain is ordered head->parent. In addition, every 3rd block
@@ -85,7 +84,6 @@ func makeChain(n int, seed byte, parent *types.Block) ([]common.Hash, map[common
 	}
 	return hashes, blockm
 }
-
 
 func testChainGen(i int, block *core.BlockGen) {
 	signer := types.HomesteadSigner{}
@@ -117,15 +115,16 @@ func testChainGen(i int, block *core.BlockGen) {
 		block.AddTx(tx)
 	}
 }
+
 var _ = ginkgo.FDescribe("", func() {
 	var (
 		block0Hash, block1Hash, block2Hash, block3Hash common.Hash
-		block0, block1, block2, block3 *types.Block
-		builder b.Builder
-		miningReward = int64(3000000000000000000)
-		burnAddress = common.HexToAddress("0x0")
-		diff *b.StateDiff
-		err error
+		block0, block1, block2, block3                 *types.Block
+		builder                                        b.Builder
+		miningReward                                   = int64(3000000000000000000)
+		burnAddress                                    = common.HexToAddress("0x0")
+		diff                                           *b.StateDiff
+		err                                            error
 	)
 
 	ginkgo.BeforeEach(func() {
@@ -207,8 +206,8 @@ var _ = ginkgo.FDescribe("", func() {
 		//1000 transferred from testBankAddress to account1Addr
 		//1000 transferred from account1Addr to account2Addr
 		var (
-			balanceChange = int64(1000)
-			block1BankBalance = int64(99990000)
+			balanceChange         = int64(1000)
+			block1BankBalance     = int64(99990000)
 			block1Account1Balance = int64(10000)
 		)
 

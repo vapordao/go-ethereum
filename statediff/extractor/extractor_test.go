@@ -20,15 +20,16 @@
 package extractor_test
 
 import (
+	"github.com/ethereum/go-ethereum/core/types"
+	b "github.com/ethereum/go-ethereum/statediff/builder"
+	e "github.com/ethereum/go-ethereum/statediff/extractor"
+	"github.com/ethereum/go-ethereum/statediff/testhelpers"
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
-	"github.com/ethereum/go-ethereum/core/types"
-	"math/rand"
-	"github.com/ethereum/go-ethereum/statediff/testhelpers"
 	"math/big"
-	e "github.com/ethereum/go-ethereum/statediff/extractor"
-	b "github.com/ethereum/go-ethereum/statediff/builder"
+	"math/rand"
 )
+
 var _ = ginkgo.Describe("Extractor", func() {
 	var publisher testhelpers.MockPublisher
 	var builder testhelpers.MockBuilder

@@ -30,7 +30,7 @@ type Extractor interface {
 }
 
 type extractor struct {
-	Builder builder.Builder   // Interface for building state diff objects from two blocks
+	Builder   builder.Builder     // Interface for building state diff objects from two blocks
 	Publisher publisher.Publisher // Interface for publishing state diff objects to a datastore (e.g. IPFS)
 }
 

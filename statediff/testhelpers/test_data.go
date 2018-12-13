@@ -1,9 +1,9 @@
 package testhelpers
 
 import (
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/statediff/builder"
 	"math/big"
-	"github.com/ethereum/go-ethereum/common"
 	"math/rand"
 )
 
@@ -23,7 +23,7 @@ var (
 		NewValue: &newStorage,
 		OldValue: &oldStorage,
 	}}
-	address = common.HexToAddress("0xaE9BEa628c4Ce503DcFD7E305CaB4e29E7476592")
+	address             = common.HexToAddress("0xaE9BEa628c4Ce503DcFD7E305CaB4e29E7476592")
 	CreatedAccountDiffs = map[common.Address]builder.AccountDiffEventual{address: {
 		Nonce: builder.DiffUint64{
 			NewValue: &NewNonceValue,
@@ -43,15 +43,15 @@ var (
 	}}
 
 	UpdatedAccountDiffs = map[common.Address]builder.AccountDiffIncremental{address: {
-		Nonce:        builder.DiffUint64{
+		Nonce: builder.DiffUint64{
 			NewValue: &NewNonceValue,
 			OldValue: &OldNonceValue,
 		},
-		Balance:      builder.DiffBigInt{
+		Balance: builder.DiffBigInt{
 			NewValue: big.NewInt(NewBalanceValue),
 			OldValue: big.NewInt(OldBalanceValue),
 		},
-		CodeHash:     CodeHash,
+		CodeHash: CodeHash,
 		ContractRoot: builder.DiffString{
 			NewValue: &ContractRoot,
 			OldValue: &ContractRoot,

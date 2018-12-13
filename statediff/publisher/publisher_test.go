@@ -1,26 +1,26 @@
 package publisher_test
 
 import (
-	"github.com/onsi/ginkgo"
-	"github.com/onsi/gomega"
-	"os"
 	"encoding/csv"
-	"path/filepath"
-	"strconv"
+	"github.com/ethereum/go-ethereum/statediff"
+	"github.com/ethereum/go-ethereum/statediff/builder"
 	p "github.com/ethereum/go-ethereum/statediff/publisher"
 	"github.com/ethereum/go-ethereum/statediff/testhelpers"
+	"github.com/onsi/ginkgo"
+	"github.com/onsi/gomega"
 	"io/ioutil"
-	"github.com/ethereum/go-ethereum/statediff/builder"
-	"github.com/ethereum/go-ethereum/statediff"
+	"os"
+	"path/filepath"
+	"strconv"
 )
 
 var _ = ginkgo.Describe("Publisher", func() {
 	var (
-		tempDir = os.TempDir()
+		tempDir        = os.TempDir()
 		testFilePrefix = "test-statediff"
-		publisher p.Publisher
-		dir string
-		err error
+		publisher      p.Publisher
+		dir            string
+		err            error
 	)
 
 	var expectedCreatedAccountRow = []string{

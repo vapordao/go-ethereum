@@ -20,8 +20,8 @@
 package publisher
 
 import (
-	"github.com/ethereum/go-ethereum/statediff/builder"
 	"github.com/ethereum/go-ethereum/statediff"
+	"github.com/ethereum/go-ethereum/statediff/builder"
 )
 
 type Publisher interface {

@@ -1,8 +1,8 @@
 package testhelpers
 
 import (
-	"github.com/ethereum/go-ethereum/common"
 	"errors"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/statediff/builder"
 )
 
@@ -11,9 +11,9 @@ var MockError = errors.New("mock error")
 type MockBuilder struct {
 	OldStateRoot common.Hash
 	NewStateRoot common.Hash
-	BlockNumber int64
-	BlockHash common.Hash
-	stateDiff *builder.StateDiff
+	BlockNumber  int64
+	BlockHash    common.Hash
+	stateDiff    *builder.StateDiff
 	builderError error
 }
 
@@ -34,8 +34,8 @@ func (builder *MockBuilder) SetBuilderError(err error) {
 	builder.builderError = err
 }
 
-type MockPublisher struct{
-	StateDiff *builder.StateDiff
+type MockPublisher struct {
+	StateDiff      *builder.StateDiff
 	publisherError error
 }
 

@@ -1,13 +1,13 @@
 package publisher
 
 import (
-	"github.com/ethereum/go-ethereum/statediff/builder"
-	"time"
-	"os"
 	"encoding/csv"
+	"github.com/ethereum/go-ethereum/statediff/builder"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
-	"path/filepath"
+	"time"
 )
 
 var (
@@ -20,7 +20,7 @@ var (
 		"storageDiffPaths",
 	}
 
-	timeStampFormat = "20060102150405.00000"
+	timeStampFormat      = "20060102150405.00000"
 	deletedAccountAction = "deleted"
 	createdAccountAction = "created"
 	updatedAccountAction = "updated"
@@ -59,7 +59,7 @@ func (p *publisher) publishStateDiffToCSV(sd builder.StateDiff) error {
 		data = append(data, row)
 	}
 
-	for _, value := range data{
+	for _, value := range data {
 		err := writer.Write(value)
 		if err != nil {
 			return err
@@ -149,4 +149,3 @@ func formatAccountDiffIncremental(accountDiff builder.AccountDiffIncremental, sd
 	}
 	return formattedAccountData
 }
-
