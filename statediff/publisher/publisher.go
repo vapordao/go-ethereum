@@ -20,13 +20,14 @@
 package publisher
 
 import (
-	"os"
 	"encoding/csv"
-	"time"
+	"github.com/ethereum/go-ethereum/statediff"
+	"github.com/ethereum/go-ethereum/statediff/builder"
+	"github.com/ethereum/go-ethereum/statediff/publisher/ipfs"
+	"os"
 	"strconv"
 	"strings"
-	"github.com/ethereum/go-ethereum/statediff/builder"
-	"github.com/ethereum/go-ethereum/statediff"
+	"time"
 )
 
 type Publisher interface {
@@ -34,6 +35,7 @@ type Publisher interface {
 }
 
 type publisher struct {
+	ipfs.DagPutter
 	Config statediff.Config
 }
 
@@ -47,15 +49,20 @@ var (
 		"storageDiffPaths",
 	}
 
-	timeStampFormat = "20060102150405.00000"
+	timeStampFormat      = "20060102150405.00000"
 	deletedAccountAction = "deleted"
 	createdAccountAction = "created"
 	updatedAccountAction = "updated"
 )
 
 func NewPublisher(config statediff.Config) (*publisher, error) {
+	adder, err := ipfs.NewAdder(config.Path)
+	if err != nil {
+		return nil, err
+	}
 	return &publisher{
-		Config: config,
+		DagPutter: ipfs.NewDagPutter(adder),
+		Config:    config,
 	}, nil
 }
 
@@ -63,6 +70,12 @@ func (p *publisher) PublishStateDiff(sd *builder.StateDiff) (string, error) {
 	switch p.Config.Mode {
 	case statediff.CSV:
 		return "", p.publishStateDiffToCSV(*sd)
+	case statediff.IPLD:
+		cidStr, err := p.DagPut(sd)
+		if err != nil {
+			return "", err
+		}
+		return cidStr, err
 	default:
 		return "", p.publishStateDiffToCSV(*sd)
 	}
@@ -94,7 +107,7 @@ func (p *publisher) publishStateDiffToCSV(sd builder.StateDiff) error {
 		data = append(data, row)
 	}
 
-	for _, value := range data{
+	for _, value := range data {
 		err := writer.Write(value)
 		if err != nil {
 			return err
@@ -184,4 +197,3 @@ func formatAccountDiffIncremental(accountDiff builder.AccountDiffIncremental, sd
 	}
 	return formattedAccountData
 }
-
