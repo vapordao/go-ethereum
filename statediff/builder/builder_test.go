@@ -1,36 +1,18 @@
-// Copyright 2015 The go-ethereum Authors
-// This file is part of the go-ethereum library.
-//
-// The go-ethereum library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// The go-ethereum library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
-
-// Contains a batch of utility type declarations used by the tests. As the node
-// operates on unique types, a lot of them are needed to check various features.
-
 package builder_test
 
 import (
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/params"
-	b "github.com/ethereum/go-ethereum/statediff/builder"
-	"github.com/onsi/ginkgo"
-	"github.com/onsi/gomega"
+	"testing"
 	"math/big"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/common"
+	b "github.com/ethereum/go-ethereum/statediff/builder"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/consensus/ethash"
+	"bytes"
+	"reflect"
 )
 
 var (
@@ -116,204 +98,205 @@ func testChainGen(i int, block *core.BlockGen) {
 	}
 }
 
-var _ = ginkgo.Describe("", func() {
+var (
+	block0Hash, block1Hash, block2Hash, block3Hash common.Hash
+	block0, block1, block2, block3                 *types.Block
+	builder                                        b.Builder
+	miningReward                                   = int64(3000000000000000000)
+	burnAddress                                    = common.HexToAddress("0x0")
+	diff                                           *b.StateDiff
+	err                                            error
+)
+
+func TestBuilder(t *testing.T) {
+	_, blocks := makeChain(3, 0, genesis)
+	block0Hash = common.HexToHash("0xd1721cfd0b29c36fd7a68f25c128e86413fb666a6e1d68e89b875bd299262661")
+	block1Hash = common.HexToHash("0x47c398dd688eaa4dd11b006888156783fe32df83d59b197c0fcd303408103d39")
+	block2Hash = common.HexToHash("0x351b2f531838683ba457e8ca4d3a844cc48147dceafbcb589dc6e3227856ee75")
+	block3Hash = common.HexToHash("0xfa40fbe2d98d98b3363a778d52f2bcd29d6790b9b3f3cab2b167fd12d3550f73")
+
+	block0 = blocks[block0Hash]
+	block1 = blocks[block1Hash]
+	block2 = blocks[block2Hash]
+	block3 = blocks[block3Hash]
+	builder = b.NewBuilder(testdb)
+
+	testEmptyDiff(t)
+	testBlock1(t)
+	testBlock2(t)
+	testBlock3(t)
+}
+
+var errorString = "Actual and expected do not match"
+
+func testEmptyDiff(t *testing.T) {
+	expectedDiff := b.StateDiff{
+		BlockNumber:     block0.Number().Int64(),
+		BlockHash:       block0Hash,
+		CreatedAccounts: emptyAccountDiffEventualMap,
+		DeletedAccounts: emptyAccountDiffEventualMap,
+		UpdatedAccounts: emptyAccountDiffIncrementalMap,
+	}
+
+	diff, err := builder.BuildStateDiff(block0.Root(), block0.Root(), block0.Number().Int64(), block0Hash)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if !equals(diff, &expectedDiff) {
+		t.Errorf("Actual and expected do not match:\nActual: %+v\nExpected: %+v", diff, expectedDiff)
+	}
+}
+
+func testBlock1(t *testing.T) {
+	//10000 transferred from testBankAddress to account1Addr
+	var balanceChange = int64(10000)
+
+	diff, err = builder.BuildStateDiff(block0.Root(), block1.Root(), block1.Number().Int64(), block1Hash)
+	if err != nil {
+		t.Error(err)
+	}
+
+	//it includes the block number and hash
+	if !equals(diff.BlockNumber, block1.Number().Int64()) { t.Errorf(errorString) }
+	if !equals(diff.BlockHash, block1Hash) { t.Errorf(errorString)}
+
+	//it returns an empty collection for deleted accounts
+	if !equals(diff.DeletedAccounts, emptyAccountDiffEventualMap) { t.Errorf(errorString)}
+
+	//it returns balance diffs for updated accounts
+	expectedBankBalanceDiff := b.DiffBigInt{
+		NewValue: big.NewInt(testBankFunds.Int64() - balanceChange),
+		OldValue: testBankFunds,
+	}
+
+	if !equals(len(diff.UpdatedAccounts), 1) { t.Errorf(errorString) }
+	if !equals(diff.UpdatedAccounts[testBankAddress].Balance, expectedBankBalanceDiff) { t.Errorf(errorString) }
+
+	//it returns balance diffs for new accounts
+	expectedAccount1BalanceDiff := b.DiffBigInt{
+		NewValue: big.NewInt(balanceChange),
+		OldValue: nil,
+	}
+
+	expectedBurnAddrBalanceDiff := b.DiffBigInt{
+		NewValue: big.NewInt(miningReward),
+		OldValue: nil,
+	}
+
+	if !equals(len(diff.CreatedAccounts), 2) {}
+	if !equals(diff.CreatedAccounts[account1Addr].Balance, expectedAccount1BalanceDiff) { t.Errorf(errorString) }
+	if !equals(diff.CreatedAccounts[burnAddress].Balance, expectedBurnAddrBalanceDiff) { t.Errorf(errorString) }
+}
+
+func testBlock2(t *testing.T) {
+	//1000 transferred from testBankAddress to account1Addr
+	//1000 transferred from account1Addr to account2Addr
 	var (
-		block0Hash, block1Hash, block2Hash, block3Hash common.Hash
-		block0, block1, block2, block3                 *types.Block
-		builder                                        b.Builder
-		miningReward                                   = int64(3000000000000000000)
-		burnAddress                                    = common.HexToAddress("0x0")
-		diff                                           *b.StateDiff
-		err                                            error
+		balanceChange         = int64(1000)
+		block1BankBalance     = int64(99990000)
+		block1Account1Balance = int64(10000)
 	)
 
-	ginkgo.BeforeEach(func() {
-		_, blocks := makeChain(3, 0, genesis)
-		block0Hash = common.HexToHash("0xd1721cfd0b29c36fd7a68f25c128e86413fb666a6e1d68e89b875bd299262661")
-		block1Hash = common.HexToHash("0x47c398dd688eaa4dd11b006888156783fe32df83d59b197c0fcd303408103d39")
-		block2Hash = common.HexToHash("0x351b2f531838683ba457e8ca4d3a844cc48147dceafbcb589dc6e3227856ee75")
-		block3Hash = common.HexToHash("0xfa40fbe2d98d98b3363a778d52f2bcd29d6790b9b3f3cab2b167fd12d3550f73")
+	diff, err = builder.BuildStateDiff(block1.Root(), block2.Root(), block2.Number().Int64(), block2Hash)
+	if err != nil {
+		t.Error(err)
+	}
+	//it includes the block number and hash
+	if !equals(diff.BlockNumber, block2.Number().Int64()) { t.Errorf(errorString)}
+	if !equals(diff.BlockHash, block2Hash) {}
 
-		block0 = blocks[block0Hash]
-		block1 = blocks[block1Hash]
-		block2 = blocks[block2Hash]
-		block3 = blocks[block3Hash]
-		builder = b.NewBuilder(testdb)
-	})
+	//it returns an empty collection for deleted accounts
+	if !equals(diff.DeletedAccounts, emptyAccountDiffEventualMap) { t.Errorf(errorString) }
 
-	ginkgo.It("returns empty account diff collections when the state root hasn't changed", func() {
-		expectedDiff := b.StateDiff{
-			BlockNumber:     block0.Number().Int64(),
-			BlockHash:       block0Hash,
-			CreatedAccounts: emptyAccountDiffEventualMap,
-			DeletedAccounts: emptyAccountDiffEventualMap,
-			UpdatedAccounts: emptyAccountDiffIncrementalMap,
+	//it returns balance diffs for updated accounts
+	expectedBankBalanceDiff := b.DiffBigInt{
+		NewValue: big.NewInt(block1BankBalance - balanceChange),
+		OldValue: big.NewInt(block1BankBalance),
+	}
+
+	expectedAccount1BalanceDiff := b.DiffBigInt{
+		NewValue: big.NewInt(block1Account1Balance - balanceChange + balanceChange),
+		OldValue: big.NewInt(block1Account1Balance),
+	}
+
+	expectedBurnBalanceDiff := b.DiffBigInt{
+		NewValue: big.NewInt(miningReward + miningReward),
+		OldValue: big.NewInt(miningReward),
+	}
+
+	if !equals(len(diff.UpdatedAccounts), 3) { t.Errorf(errorString) }
+	if !equals(diff.UpdatedAccounts[testBankAddress].Balance, expectedBankBalanceDiff) { t.Errorf(errorString) }
+	if !equals(diff.UpdatedAccounts[account1Addr].Balance, expectedAccount1BalanceDiff) { t.Errorf(errorString) }
+	if !equals(diff.UpdatedAccounts[burnAddress].Balance, expectedBurnBalanceDiff) { t.Errorf(errorString) }
+
+	//it returns balance diffs for new accounts
+	expectedAccount2BalanceDiff := b.DiffBigInt{
+		NewValue: big.NewInt(balanceChange),
+		OldValue: nil,
+	}
+
+	expectedContractBalanceDiff := b.DiffBigInt{
+		NewValue: big.NewInt(0),
+		OldValue: nil,
+	}
+
+	if !equals(len(diff.CreatedAccounts), 2) { t.Errorf(errorString) }
+	if !equals(diff.CreatedAccounts[account2Addr].Balance, expectedAccount2BalanceDiff) { t.Errorf(errorString) }
+	if !equals(diff.CreatedAccounts[contractAddr].Balance, expectedContractBalanceDiff) { t.Errorf(errorString) }
+}
+
+func testBlock3(t *testing.T) {
+	diff, err = builder.BuildStateDiff(block2.Root(), block3.Root(), block3.Number().Int64(), block3Hash)
+	if err != nil {
+		t.Error(err)
+	}
+
+	//it includes the block number and hash
+	if !equals(diff.BlockNumber, block3.Number().Int64()) { t.Errorf(errorString) }
+	if !equals(diff.BlockHash, block3Hash) { t.Errorf(errorString) }
+
+	//it returns an empty collection for deleted accounts
+	if !equals(diff.DeletedAccounts, emptyAccountDiffEventualMap) { t.Errorf(errorString) }
+
+	//it returns an empty collection for created accounts
+	if !equals(diff.CreatedAccounts, emptyAccountDiffEventualMap) { t.Errorf(errorString) }
+
+	//it returns balance, storage and nonce diffs for updated accounts
+		block2Account2Balance := int64(1000)
+		expectedAcct2BalanceDiff := b.DiffBigInt{
+			NewValue: big.NewInt(block2Account2Balance + miningReward),
+			OldValue: big.NewInt(block2Account2Balance),
 		}
 
-		diff, err := builder.BuildStateDiff(block0.Root(), block0.Root(), block0.Number().Int64(), block0Hash)
+		expectedContractStorageDiff := make(map[string]b.DiffString)
+		newVal := "0x03"
+		oldVal := "0x0"
+		path := "0x405787fa12a823e0f2b7631cc41b3ba8828b3321ca811111fa75cd3aa3bb5ace"
+		expectedContractStorageDiff[path] = b.DiffString{
+			NewValue: &newVal,
+			OldValue: &oldVal,
+		}
 
-		gomega.Expect(err).NotTo(gomega.HaveOccurred())
-		gomega.Expect(diff).To(gomega.Equal(&expectedDiff))
-	})
+		oldNonce := uint64(2)
+		newNonce := uint64(3)
+		expectedBankNonceDiff := b.DiffUint64{
+			NewValue: &newNonce,
+			OldValue: &oldNonce,
+		}
 
-	ginkgo.Context("Block 1", func() {
-		//10000 transferred from testBankAddress to account1Addr
-		var balanceChange = int64(10000)
+	if !equals(len(diff.UpdatedAccounts), 3) { t.Errorf(errorString) }
+	if !equals(diff.UpdatedAccounts[account2Addr].Balance, expectedAcct2BalanceDiff) { t.Errorf(errorString) }
+	if !equals(diff.UpdatedAccounts[contractAddr].Storage, expectedContractStorageDiff) { t.Errorf(errorString) }
+	if !equals(diff.UpdatedAccounts[testBankAddress].Nonce, expectedBankNonceDiff) { t.Errorf(errorString) }
+}
 
-		ginkgo.BeforeEach(func() {
-			diff, err = builder.BuildStateDiff(block0.Root(), block1.Root(), block1.Number().Int64(), block1Hash)
+func equals(actual, expected interface{}) (success bool) {
+	if actualByteSlice, ok := actual.([]byte); ok {
+		if expectedByteSlice, ok := expected.([]byte); ok {
+			return bytes.Equal(actualByteSlice, expectedByteSlice)
+		}
+	}
 
-			gomega.Expect(err).NotTo(gomega.HaveOccurred())
-		})
-
-		ginkgo.It("includes the block number and hash", func() {
-			gomega.Expect(diff.BlockNumber).To(gomega.Equal(block1.Number().Int64()))
-			gomega.Expect(diff.BlockHash).To(gomega.Equal(block1Hash))
-		})
-
-		ginkgo.It("returns an empty collection for deleted accounts", func() {
-			gomega.Expect(diff.DeletedAccounts).To(gomega.Equal(emptyAccountDiffEventualMap))
-		})
-
-		ginkgo.It("returns balance diffs for updated accounts", func() {
-			expectedBankBalanceDiff := b.DiffBigInt{
-				NewValue: big.NewInt(testBankFunds.Int64() - balanceChange),
-				OldValue: testBankFunds,
-			}
-
-			gomega.Expect(len(diff.UpdatedAccounts)).To(gomega.Equal(1))
-			gomega.Expect(diff.UpdatedAccounts[testBankAddress].Balance).To(gomega.Equal(expectedBankBalanceDiff))
-		})
-
-		ginkgo.It("returns balance diffs for new accounts", func() {
-			expectedAccount1BalanceDiff := b.DiffBigInt{
-				NewValue: big.NewInt(balanceChange),
-				OldValue: nil,
-			}
-
-			expectedBurnAddrBalanceDiff := b.DiffBigInt{
-				NewValue: big.NewInt(miningReward),
-				OldValue: nil,
-			}
-
-			gomega.Expect(len(diff.CreatedAccounts)).To(gomega.Equal(2))
-			gomega.Expect(diff.CreatedAccounts[account1Addr].Balance).To(gomega.Equal(expectedAccount1BalanceDiff))
-			gomega.Expect(diff.CreatedAccounts[burnAddress].Balance).To(gomega.Equal(expectedBurnAddrBalanceDiff))
-		})
-	})
-
-	ginkgo.Context("Block 2", func() {
-		//1000 transferred from testBankAddress to account1Addr
-		//1000 transferred from account1Addr to account2Addr
-		var (
-			balanceChange         = int64(1000)
-			block1BankBalance     = int64(99990000)
-			block1Account1Balance = int64(10000)
-		)
-
-		ginkgo.BeforeEach(func() {
-			diff, err = builder.BuildStateDiff(block1.Root(), block2.Root(), block2.Number().Int64(), block2Hash)
-
-			gomega.Expect(err).NotTo(gomega.HaveOccurred())
-		})
-
-		ginkgo.It("includes the block number and hash", func() {
-			gomega.Expect(diff.BlockNumber).To(gomega.Equal(block2.Number().Int64()))
-			gomega.Expect(diff.BlockHash).To(gomega.Equal(block2Hash))
-		})
-
-		ginkgo.It("returns an empty collection for deleted accounts", func() {
-			gomega.Expect(diff.DeletedAccounts).To(gomega.Equal(emptyAccountDiffEventualMap))
-		})
-
-		ginkgo.It("returns balance diffs for updated accounts", func() {
-			expectedBankBalanceDiff := b.DiffBigInt{
-				NewValue: big.NewInt(block1BankBalance - balanceChange),
-				OldValue: big.NewInt(block1BankBalance),
-			}
-
-			expectedAccount1BalanceDiff := b.DiffBigInt{
-				NewValue: big.NewInt(block1Account1Balance - balanceChange + balanceChange),
-				OldValue: big.NewInt(block1Account1Balance),
-			}
-
-			expectedBurnBalanceDiff := b.DiffBigInt{
-				NewValue: big.NewInt(miningReward + miningReward),
-				OldValue: big.NewInt(miningReward),
-			}
-
-			gomega.Expect(len(diff.UpdatedAccounts)).To(gomega.Equal(3))
-			gomega.Expect(diff.UpdatedAccounts[testBankAddress].Balance).To(gomega.Equal(expectedBankBalanceDiff))
-			gomega.Expect(diff.UpdatedAccounts[account1Addr].Balance).To(gomega.Equal(expectedAccount1BalanceDiff))
-			gomega.Expect(diff.UpdatedAccounts[burnAddress].Balance).To(gomega.Equal(expectedBurnBalanceDiff))
-		})
-
-		ginkgo.It("returns balance diffs for new accounts", func() {
-			expectedAccount2BalanceDiff := b.DiffBigInt{
-				NewValue: big.NewInt(balanceChange),
-				OldValue: nil,
-			}
-
-			expectedContractBalanceDiff := b.DiffBigInt{
-				NewValue: big.NewInt(0),
-				OldValue: nil,
-			}
-
-			gomega.Expect(len(diff.CreatedAccounts)).To(gomega.Equal(2))
-			gomega.Expect(diff.CreatedAccounts[account2Addr].Balance).To(gomega.Equal(expectedAccount2BalanceDiff))
-			gomega.Expect(diff.CreatedAccounts[contractAddr].Balance).To(gomega.Equal(expectedContractBalanceDiff))
-		})
-	})
-
-	ginkgo.Context("Block 3", func() {
-		//the contract's storage is changed
-		//and the block is mined by account 2
-		ginkgo.BeforeEach(func() {
-			diff, err = builder.BuildStateDiff(block2.Root(), block3.Root(), block3.Number().Int64(), block3Hash)
-
-			gomega.Expect(err).NotTo(gomega.HaveOccurred())
-		})
-
-		ginkgo.It("includes the block number and hash", func() {
-			gomega.Expect(diff.BlockNumber).To(gomega.Equal(block3.Number().Int64()))
-			gomega.Expect(diff.BlockHash).To(gomega.Equal(block3Hash))
-		})
-
-		ginkgo.It("returns an empty collection for deleted accounts", func() {
-			gomega.Expect(diff.DeletedAccounts).To(gomega.Equal(emptyAccountDiffEventualMap))
-		})
-
-		ginkgo.It("returns an empty collection for created accounts", func() {
-			gomega.Expect(diff.CreatedAccounts).To(gomega.Equal(emptyAccountDiffEventualMap))
-		})
-
-		ginkgo.It("returns balance, storage and nonce diffs for updated accounts", func() {
-			block2Account2Balance := int64(1000)
-			expectedAcct2BalanceDiff := b.DiffBigInt{
-				NewValue: big.NewInt(block2Account2Balance + miningReward),
-				OldValue: big.NewInt(block2Account2Balance),
-			}
-
-			expectedContractStorageDiff := make(map[string]b.DiffString)
-			newVal := "0x03"
-			oldVal := "0x0"
-			path := "0x405787fa12a823e0f2b7631cc41b3ba8828b3321ca811111fa75cd3aa3bb5ace"
-			expectedContractStorageDiff[path] = b.DiffString{
-				NewValue: &newVal,
-				OldValue: &oldVal,
-			}
-
-			oldNonce := uint64(2)
-			newNonce := uint64(3)
-			expectedBankNonceDiff := b.DiffUint64{
-				NewValue: &newNonce,
-				OldValue: &oldNonce,
-			}
-
-			gomega.Expect(len(diff.UpdatedAccounts)).To(gomega.Equal(3))
-			gomega.Expect(diff.UpdatedAccounts[account2Addr].Balance).To(gomega.Equal(expectedAcct2BalanceDiff))
-			gomega.Expect(diff.UpdatedAccounts[contractAddr].Storage).To(gomega.Equal(expectedContractStorageDiff))
-			gomega.Expect(diff.UpdatedAccounts[testBankAddress].Nonce).To(gomega.Equal(expectedBankNonceDiff))
-		})
-	})
-})
+	return reflect.DeepEqual(actual, expected)
+}
