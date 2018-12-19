@@ -26,6 +26,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 type Builder interface {
@@ -156,7 +157,7 @@ func (sdb *builder) buildDiffEventual(accounts map[common.Address]*state.Account
 
 		codeBytes, err := sdb.chainDB.Get(val.CodeHash)
 
-		codeHash := common.ToHex(val.CodeHash)
+		codeHash := hexutil.Encode(val.CodeHash)
 		hexRoot := val.Root.Hex()
 
 		if created {
@@ -222,7 +223,7 @@ func (sdb *builder) buildDiffIncremental(creations map[common.Address]*state.Acc
 				NewValue: createdAcc.Balance,
 				OldValue: deletedAcc.Balance,
 			}
-			codeHash := common.ToHex(createdAcc.CodeHash)
+			codeHash := hexutil.Encode(createdAcc.CodeHash)
 
 			nHexRoot := createdAcc.Root.Hex()
 			oHexRoot := deletedAcc.Root.Hex()
@@ -258,7 +259,7 @@ func (sdb *builder) buildStorageDiffsEventual(sr common.Hash, creation bool) (ma
 		if it.Leaf() {
 			log.Debug("Found leaf in storage", "path", pathToStr(it))
 			path := pathToStr(it)
-			value := common.ToHex(it.LeafBlob())
+			value := hexutil.Encode(it.LeafBlob())
 			if creation {
 				storageDiffs[path] = DiffString{NewValue: &value}
 			} else {
@@ -292,11 +293,11 @@ func (sdb *builder) buildStorageDiffsIncremental(oldSR common.Hash, newSR common
 		if it.Leaf() {
 			log.Debug("Found leaf in storage", "path", pathToStr(it))
 			path := pathToStr(it)
-			value := common.ToHex(it.LeafBlob())
+			value := hexutil.Encode(it.LeafBlob())
 			if oldVal, err := oldTrie.TryGet(it.LeafKey()); err != nil {
 				log.Error("Failed to look up value in oldTrie", "path", path, "error", err)
 			} else {
-				hexOldVal := common.ToHex(oldVal)
+				hexOldVal := hexutil.Encode(oldVal)
 				storageDiffs[path] = DiffString{OldValue: &hexOldVal, NewValue: &value}
 			}
 		}
@@ -311,10 +312,10 @@ func (sdb *builder) buildStorageDiffsIncremental(oldSR common.Hash, newSR common
 
 func (sdb *builder) addressByPath(path []byte) (*common.Address, error) {
 	// db := core.PreimageTable(sdb.chainDb)
-	log.Debug("Looking up address from path", "path", common.ToHex(append([]byte("secure-key-"), path...)))
+	log.Debug("Looking up address from path", "path", hexutil.Encode(append([]byte("secure-key-"), path...)))
 	// if addrBytes,err := db.Get(path); err != nil {
 	if addrBytes, err := sdb.chainDB.Get(append([]byte("secure-key-"), hexToKeybytes(path)...)); err != nil {
-		log.Error("Error looking up address via path", "path", common.ToHex(append([]byte("secure-key-"), path...)), "error", err)
+		log.Error("Error looking up address via path", "path", hexutil.Encode(append([]byte("secure-key-"), path...)), "error", err)
 		return nil, err
 	} else {
 		addr := common.BytesToAddress(addrBytes)
