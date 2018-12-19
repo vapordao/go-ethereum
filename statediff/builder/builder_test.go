@@ -39,12 +39,10 @@ var (
 	builder                                        b.Builder
 	miningReward                                   = int64(3000000000000000000)
 	burnAddress                                    = common.HexToAddress("0x0")
-	diff                                           *b.StateDiff
-	err                                            error
 )
 
 func TestBuilder(t *testing.T) {
-	_, blocks := makeChain(3, 0, genesis)
+	_, blocks := makeChain(3, genesis)
 	block0Hash = common.HexToHash("0xd1721cfd0b29c36fd7a68f25c128e86413fb666a6e1d68e89b875bd299262661")
 	block1Hash = common.HexToHash("0x47c398dd688eaa4dd11b006888156783fe32df83d59b197c0fcd303408103d39")
 	block2Hash = common.HexToHash("0x351b2f531838683ba457e8ca4d3a844cc48147dceafbcb589dc6e3227856ee75")
@@ -76,7 +74,6 @@ func TestBuilder(t *testing.T) {
 		nonce3 = uint64(3)
 		originalContractRoot = "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"
 		newContractRoot = "0x9e676b23802aff85d29b4f0243939bc6ecfdca2a41532310091781854d6ffeb2"
-		oldStorageValue = "0x"
 		newStorageValue = "0x03"
 	)
 
@@ -230,9 +227,7 @@ func TestBuilder(t *testing.T) {
 						ContractRoot: b.DiffString{ NewValue: &newContractRoot },
 						Storage:      map[string]b.DiffString{
 							"0x405787fa12a823e0f2b7631cc41b3ba8828b3321ca811111fa75cd3aa3bb5ace": {
-								NewValue: &newStorageValue,
-								OldValue: &oldStorageValue,
-							},
+								NewValue: &newStorageValue },
 						},
 					},
 					testBankAddress: {
@@ -288,7 +283,7 @@ func equals(actual, expected interface{}) (success bool) {
 // the returned hash chain is ordered head->parent. In addition, every 3rd block
 // contains a transaction and every 5th an uncle to allow testing correct block
 // reassembly.
-func makeChain(n int, seed byte, parent *types.Block) ([]common.Hash, map[common.Hash]*types.Block) {
+func makeChain(n int, parent *types.Block) ([]common.Hash, map[common.Hash]*types.Block) {
 	blocks, _ := core.GenerateChain(params.TestChainConfig, parent, ethash.NewFaker(), testdb, n, testChainGen)
 	hashes := make([]common.Hash, n+1)
 	hashes[len(hashes)-1] = parent.Hash()
