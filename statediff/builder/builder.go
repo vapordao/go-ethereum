@@ -162,7 +162,7 @@ func (sdb *builder) buildDiffEventual(accounts map[common.Address]*state.Account
 		if created {
 			nonce := DiffUint64{ Value: &val.Nonce }
 			balance := DiffBigInt{ Value: val.Balance }
-			contractRoot := DiffString{ NewValue: &hexRoot }
+			contractRoot := DiffString{ Value: &hexRoot }
 			accountDiffs[addr] = AccountDiffEventual{
 				Nonce:        nonce,
 				Balance:      balance,
@@ -174,7 +174,7 @@ func (sdb *builder) buildDiffEventual(accounts map[common.Address]*state.Account
 		} else {
 			nonce := DiffUint64{ Value: &val.Nonce }
 			balance := DiffBigInt{ Value: val.Balance }
-			contractRoot := DiffString{ OldValue: &hexRoot }
+			contractRoot := DiffString{ Value: &hexRoot }
 			accountDiffs[addr] = AccountDiffEventual{
 				Nonce:        nonce,
 				Balance:      balance,
@@ -204,7 +204,7 @@ func (sdb *builder) buildDiffIncremental(creations map[common.Address]*state.Acc
 			codeHash := hexutil.Encode(createdAcc.CodeHash)
 
 			nHexRoot := createdAcc.Root.Hex()
-			contractRoot := DiffString{ NewValue: &nHexRoot }
+			contractRoot := DiffString{ Value: &nHexRoot }
 
 			updatedAccounts[common.HexToAddress(val)] = AccountDiffIncremental{
 				Nonce:        nonce,
@@ -234,11 +234,7 @@ func (sdb *builder) buildStorageDiffsEventual(sr common.Hash, creation bool) (ma
 			log.Debug("Found leaf in storage", "path", pathToStr(it))
 			path := pathToStr(it)
 			value := hexutil.Encode(it.LeafBlob())
-			if creation {
-				storageDiffs[path] = DiffString{NewValue: &value}
-			} else {
-				storageDiffs[path] = DiffString{OldValue: &value}
-			}
+			storageDiffs[path] = DiffString{Value: &value}
 		}
 		cont := it.Next(true)
 		if !cont {
@@ -268,7 +264,7 @@ func (sdb *builder) buildStorageDiffsIncremental(oldSR common.Hash, newSR common
 			log.Debug("Found leaf in storage", "path", pathToStr(it))
 			path := pathToStr(it)
 			value := hexutil.Encode(it.LeafBlob())
-			storageDiffs[path] = DiffString{NewValue: &value}
+			storageDiffs[path] = DiffString{Value: &value}
 		}
 
 		cont := it.Next(true)
