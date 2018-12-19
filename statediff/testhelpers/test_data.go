@@ -19,59 +19,29 @@ var (
 	StoragePath     = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
 	oldStorage      = "0x0"
 	newStorage      = "0x03"
-	storage         = map[string]builder.DiffString{StoragePath: {
-		NewValue: &newStorage,
-		OldValue: &oldStorage,
-	}}
+	storage         = map[string]builder.DiffString{StoragePath: { Value: &newStorage }}
 	address             = common.HexToAddress("0xaE9BEa628c4Ce503DcFD7E305CaB4e29E7476592")
 	CreatedAccountDiffs = map[common.Address]builder.AccountDiffEventual{address: {
-		Nonce: builder.DiffUint64{
-			NewValue: &NewNonceValue,
-			OldValue: &OldNonceValue,
-		},
-		Balance: builder.DiffBigInt{
-			NewValue: big.NewInt(NewBalanceValue),
-			OldValue: big.NewInt(OldBalanceValue),
-		},
-		ContractRoot: builder.DiffString{
-			NewValue: &ContractRoot,
-			OldValue: &ContractRoot,
-		},
+		Nonce: builder.DiffUint64{ Value: &NewNonceValue },
+		Balance: builder.DiffBigInt{ Value: big.NewInt(NewBalanceValue) },
+		ContractRoot: builder.DiffString{ Value: &ContractRoot },
 		Code:     []byte("created account code"),
 		CodeHash: CodeHash,
 		Storage:  storage,
 	}}
 
 	UpdatedAccountDiffs = map[common.Address]builder.AccountDiffIncremental{address: {
-		Nonce: builder.DiffUint64{
-			NewValue: &NewNonceValue,
-			OldValue: &OldNonceValue,
-		},
-		Balance: builder.DiffBigInt{
-			NewValue: big.NewInt(NewBalanceValue),
-			OldValue: big.NewInt(OldBalanceValue),
-		},
+		Nonce: builder.DiffUint64{ Value: &NewNonceValue },
+		Balance: builder.DiffBigInt{ Value: big.NewInt(NewBalanceValue) },
 		CodeHash: CodeHash,
-		ContractRoot: builder.DiffString{
-			NewValue: &ContractRoot,
-			OldValue: &ContractRoot,
-		},
+		ContractRoot: builder.DiffString{ Value: &ContractRoot },
 		Storage: storage,
 	}}
 
 	DeletedAccountDiffs = map[common.Address]builder.AccountDiffEventual{address: {
-		Nonce: builder.DiffUint64{
-			NewValue: &NewNonceValue,
-			OldValue: &OldNonceValue,
-		},
-		Balance: builder.DiffBigInt{
-			NewValue: big.NewInt(NewBalanceValue),
-			OldValue: big.NewInt(OldBalanceValue),
-		},
-		ContractRoot: builder.DiffString{
-			NewValue: &ContractRoot,
-			OldValue: &ContractRoot,
-		},
+		Nonce: builder.DiffUint64{ Value: &NewNonceValue },
+		Balance: builder.DiffBigInt{ Value: big.NewInt(NewBalanceValue) },
+		ContractRoot: builder.DiffString{ Value: &ContractRoot },
 		Code:     []byte("deleted account code"),
 		CodeHash: CodeHash,
 		Storage:  storage,

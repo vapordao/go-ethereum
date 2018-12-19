@@ -13,11 +13,8 @@ import (
 var (
 	Headers = []string{
 		"blockNumber", "blockHash", "accountAction",
-		"code", "codeHash",
-		"oldNonceValue", "newNonceValue",
-		"oldBalanceValue", "newBalanceValue",
-		"oldContractRoot", "newContractRoot",
-		"storageDiffPaths",
+		"code", "codeHash", "nonceValue",
+		"balanceValue", "contractRoot", "storageDiffPaths",
 	}
 
 	timeStampFormat      = "20060102150405.00000"
@@ -103,8 +100,7 @@ func accumulateCreatedAccountRows(sd builder.StateDiff) [][]string {
 }
 
 func formatAccountDiffEventual(accountDiff builder.AccountDiffEventual, sd builder.StateDiff, accountAction string) []string {
-	oldContractRoot := accountDiff.ContractRoot.OldValue
-	newContractRoot := accountDiff.ContractRoot.NewValue
+	newContractRoot := accountDiff.ContractRoot.Value
 	var storageDiffPaths []string
 	for k := range accountDiff.Storage {
 		storageDiffPaths = append(storageDiffPaths, k)
@@ -115,11 +111,8 @@ func formatAccountDiffEventual(accountDiff builder.AccountDiffEventual, sd build
 		accountAction,
 		string(accountDiff.Code),
 		accountDiff.CodeHash,
-		strconv.FormatUint(*accountDiff.Nonce.OldValue, 10),
-		strconv.FormatUint(*accountDiff.Nonce.NewValue, 10),
-		accountDiff.Balance.OldValue.String(),
-		accountDiff.Balance.NewValue.String(),
-		*oldContractRoot,
+		strconv.FormatUint(*accountDiff.Nonce.Value, 10),
+		accountDiff.Balance.Value.String(),
 		*newContractRoot,
 		strings.Join(storageDiffPaths, ","),
 	}
@@ -127,8 +120,7 @@ func formatAccountDiffEventual(accountDiff builder.AccountDiffEventual, sd build
 }
 
 func formatAccountDiffIncremental(accountDiff builder.AccountDiffIncremental, sd builder.StateDiff, accountAction string) []string {
-	oldContractRoot := accountDiff.ContractRoot.OldValue
-	newContractRoot := accountDiff.ContractRoot.NewValue
+	newContractRoot := accountDiff.ContractRoot.Value
 	var storageDiffPaths []string
 	for k := range accountDiff.Storage {
 		storageDiffPaths = append(storageDiffPaths, k)
@@ -139,11 +131,8 @@ func formatAccountDiffIncremental(accountDiff builder.AccountDiffIncremental, sd
 		accountAction,
 		"",
 		accountDiff.CodeHash,
-		strconv.FormatUint(*accountDiff.Nonce.OldValue, 10),
-		strconv.FormatUint(*accountDiff.Nonce.NewValue, 10),
-		accountDiff.Balance.OldValue.String(),
-		accountDiff.Balance.NewValue.String(),
-		*oldContractRoot,
+		strconv.FormatUint(*accountDiff.Nonce.Value, 10),
+		accountDiff.Balance.Value.String(),
 		*newContractRoot,
 		strings.Join(storageDiffPaths, ","),
 	}

@@ -30,11 +30,8 @@ var expectedCreatedAccountRow = []string{
 	"created",
 	"created account code",
 	testhelpers.CodeHash,
-	strconv.FormatUint(testhelpers.OldNonceValue, 10),
 	strconv.FormatUint(testhelpers.NewNonceValue, 10),
-	strconv.FormatInt(testhelpers.OldBalanceValue, 10),
 	strconv.FormatInt(testhelpers.NewBalanceValue, 10),
-	testhelpers.ContractRoot,
 	testhelpers.ContractRoot,
 	testhelpers.StoragePath,
 }
@@ -45,11 +42,8 @@ var expectedUpdatedAccountRow = []string{
 	"updated",
 	"",
 	testhelpers.CodeHash,
-	strconv.FormatUint(testhelpers.OldNonceValue, 10),
 	strconv.FormatUint(testhelpers.NewNonceValue, 10),
-	strconv.FormatInt(testhelpers.OldBalanceValue, 10),
 	strconv.FormatInt(testhelpers.NewBalanceValue, 10),
-	testhelpers.ContractRoot,
 	testhelpers.ContractRoot,
 	testhelpers.StoragePath,
 }
@@ -60,16 +54,11 @@ var expectedDeletedAccountRow = []string{
 	"deleted",
 	"deleted account code",
 	testhelpers.CodeHash,
-	strconv.FormatUint(testhelpers.OldNonceValue, 10),
 	strconv.FormatUint(testhelpers.NewNonceValue, 10),
-	strconv.FormatInt(testhelpers.OldBalanceValue, 10),
 	strconv.FormatInt(testhelpers.NewBalanceValue, 10),
-	testhelpers.ContractRoot,
 	testhelpers.ContractRoot,
 	testhelpers.StoragePath,
 }
-
-
 
 func TestPublisher(t *testing.T) {
 	dir, err = ioutil.TempDir(tempDir, testFilePrefix)
