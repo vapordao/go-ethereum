@@ -9,10 +9,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	b "github.com/ethereum/go-ethereum/statediff/builder"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
 	"bytes"
 	"reflect"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/consensus/ethash"
 )
 
 var (
@@ -33,22 +33,256 @@ var (
 
 	emptyAccountDiffEventualMap    = make(map[common.Address]b.AccountDiffEventual)
 	emptyAccountDiffIncrementalMap = make(map[common.Address]b.AccountDiffIncremental)
+
+	block0Hash, block1Hash, block2Hash, block3Hash common.Hash
+	block0, block1, block2, block3                 *types.Block
+	builder                                        b.Builder
+	miningReward                                   = int64(3000000000000000000)
+	burnAddress                                    = common.HexToAddress("0x0")
+	diff                                           *b.StateDiff
+	err                                            error
 )
 
-/*
-contract test {
+func TestBuilder(t *testing.T) {
+	_, blocks := makeChain(3, 0, genesis)
+	block0Hash = common.HexToHash("0xd1721cfd0b29c36fd7a68f25c128e86413fb666a6e1d68e89b875bd299262661")
+	block1Hash = common.HexToHash("0x47c398dd688eaa4dd11b006888156783fe32df83d59b197c0fcd303408103d39")
+	block2Hash = common.HexToHash("0x351b2f531838683ba457e8ca4d3a844cc48147dceafbcb589dc6e3227856ee75")
+	block3Hash = common.HexToHash("0xfa40fbe2d98d98b3363a778d52f2bcd29d6790b9b3f3cab2b167fd12d3550f73")
 
-    uint256[100] data;
+	block0 = blocks[block0Hash]
+	block1 = blocks[block1Hash]
+	block2 = blocks[block2Hash]
+	block3 = blocks[block3Hash]
+	builder = b.NewBuilder(testdb)
 
-    function Put(uint256 addr, uint256 value) {
-        data[addr] = value;
-    }
+	type arguments struct {
+		oldStateRoot common.Hash
+		newStateRoot common.Hash
+		blockNumber int64
+		blockHash common.Hash
+	}
 
-    function Get(uint256 addr) constant returns (uint256 value) {
-        return data[addr];
-    }
+
+	var (
+		balanceChange10000 = int64(10000)
+		balanceChange1000 = int64(1000)
+		block1BankBalance     = int64(99990000)
+		block1Account1Balance = int64(10000)
+		block2Account2Balance = int64(1000)
+		nonce0 = uint64(0)
+		nonce1 = uint64(1)
+		nonce2 = uint64(2)
+		nonce3 = uint64(3)
+		originalContractRoot = "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"
+		newContractRoot = "0x9e676b23802aff85d29b4f0243939bc6ecfdca2a41532310091781854d6ffeb2"
+		oldStorageValue = "0x"
+		newStorageValue = "0x03"
+	)
+
+	var tests = []struct{
+		name string
+		startingArguments arguments
+		expected *b.StateDiff
+	} {
+		{
+			"testEmptyDiff",
+			arguments{
+				oldStateRoot: block0.Root(),
+				newStateRoot: block0.Root(),
+				blockNumber:  block0.Number().Int64(),
+				blockHash:    block0Hash,
+			},
+			&b.StateDiff{
+				BlockNumber:     block0.Number().Int64(),
+				BlockHash:       block0Hash,
+				CreatedAccounts: emptyAccountDiffEventualMap,
+				DeletedAccounts: emptyAccountDiffEventualMap,
+				UpdatedAccounts: emptyAccountDiffIncrementalMap,
+			},
+		},
+		{
+			"testBlock1",
+			//10000 transferred from testBankAddress to account1Addr
+			arguments{
+				oldStateRoot: block0.Root(),
+				newStateRoot: block1.Root(),
+				blockNumber:  block1.Number().Int64(),
+				blockHash:    block1Hash,
+			},
+			&b.StateDiff{
+				BlockNumber:     block1.Number().Int64(),
+				BlockHash:       block1.Hash(),
+				CreatedAccounts: map[common.Address]b.AccountDiffEventual{
+					account1Addr: {
+						Nonce:        b.DiffUint64{ Value: &nonce0 },
+						Balance:      b.DiffBigInt{ Value: big.NewInt(balanceChange10000) },
+						Code:         nil,
+						CodeHash:     "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+						ContractRoot: b.DiffString{ NewValue: &originalContractRoot, OldValue: nil },
+						Storage:      map[string]b.DiffString{},
+					},
+					burnAddress: {
+						Nonce:        b.DiffUint64{ Value: &nonce0 },
+						Balance:      b.DiffBigInt{ Value: big.NewInt(miningReward)},
+						Code:         nil,
+						CodeHash:     "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+						ContractRoot: b.DiffString{ NewValue: &originalContractRoot, OldValue: nil },
+						Storage:      map[string]b.DiffString{},
+					},
+				},
+				DeletedAccounts: emptyAccountDiffEventualMap,
+				UpdatedAccounts: map[common.Address]b.AccountDiffIncremental{
+					testBankAddress: {
+						Nonce:        b.DiffUint64{ Value: &nonce1 },
+						Balance:      b.DiffBigInt{ Value: big.NewInt(testBankFunds.Int64() - balanceChange10000) },
+						CodeHash:     "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+						ContractRoot: b.DiffString{ NewValue: &originalContractRoot },
+						Storage:      map[string]b.DiffString{},
+					},
+				},
+			},
+		},
+		{
+			"testBlock2",
+			//1000 transferred from testBankAddress to account1Addr
+			//1000 transferred from account1Addr to account2Addr
+			arguments{
+				oldStateRoot: block1.Root(),
+				newStateRoot: block2.Root(),
+				blockNumber:  block2.Number().Int64(),
+				blockHash:    block2Hash,
+			},
+			&b.StateDiff{
+				BlockNumber:     block2.Number().Int64(),
+				BlockHash:       block2.Hash(),
+				CreatedAccounts: map[common.Address]b.AccountDiffEventual{
+					account2Addr: {
+						Nonce:        b.DiffUint64{ Value: &nonce0 },
+						Balance:      b.DiffBigInt{ Value: big.NewInt(balanceChange1000) },
+						Code:         nil,
+						CodeHash:     "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+						ContractRoot: b.DiffString{ NewValue: &originalContractRoot},
+						Storage:      map[string]b.DiffString{},
+					},
+					contractAddr: {
+						Nonce:        b.DiffUint64{ Value: &nonce1 },
+						Balance:      b.DiffBigInt{ Value: big.NewInt(0) },
+						Code:         []byte{96, 96, 96, 64, 82, 96, 0, 53, 124, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 144, 4, 128, 99, 96, 205, 38, 133, 20, 96, 65, 87, 128, 99, 193, 100, 49, 185, 20, 96, 107, 87, 96, 63, 86, 91, 0, 91, 96, 85, 96, 4, 128, 128, 53, 144, 96, 32, 1, 144, 145, 144, 80, 80, 96, 169, 86, 91, 96, 64, 81, 128, 130, 129, 82, 96, 32, 1, 145, 80, 80, 96, 64, 81, 128, 145, 3, 144, 243, 91, 96, 136, 96, 4, 128, 128, 53, 144, 96, 32, 1, 144, 145, 144, 128, 53, 144, 96, 32, 1, 144, 145, 144, 80, 80, 96, 138, 86, 91, 0, 91, 128, 96, 0, 96, 0, 80, 131, 96, 100, 129, 16, 21, 96, 2, 87, 144, 144, 1, 96, 0, 91, 80, 129, 144, 85, 80, 91, 80, 80, 86, 91, 96, 0, 96, 0, 96, 0, 80, 130, 96, 100, 129, 16, 21, 96, 2, 87, 144, 144, 1, 96, 0, 91, 80, 84, 144, 80, 96, 199, 86, 91, 145, 144, 80, 86},
+						CodeHash:     "0x1c671ee4ae8abbacab7da59d6f8785cce8295eb086551ce7ac266a2e93666c0f",
+						ContractRoot: b.DiffString{ NewValue: &originalContractRoot},
+						Storage:      map[string]b.DiffString{},
+					},
+				},
+				DeletedAccounts: emptyAccountDiffEventualMap,
+				UpdatedAccounts: map[common.Address]b.AccountDiffIncremental{
+					testBankAddress: {
+						Nonce:        b.DiffUint64{ Value: &nonce2 },
+						Balance:      b.DiffBigInt{ Value: big.NewInt(block1BankBalance - balanceChange1000) },
+						CodeHash:     "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+						ContractRoot: b.DiffString{ NewValue: &originalContractRoot },
+						Storage:      map[string]b.DiffString{},
+					},
+					account1Addr: {
+						Nonce:        b.DiffUint64{ Value: &nonce2 },
+						Balance:      b.DiffBigInt{ Value: big.NewInt(block1Account1Balance - balanceChange1000 + balanceChange1000) },
+						CodeHash:     "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+						ContractRoot: b.DiffString{ NewValue: &originalContractRoot },
+						Storage:      map[string]b.DiffString{},
+					},
+					burnAddress: {
+						Nonce:        b.DiffUint64{ Value: &nonce0 },
+						Balance:      b.DiffBigInt{ Value: big.NewInt(miningReward + miningReward) },
+						CodeHash:     "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+						ContractRoot: b.DiffString{ NewValue: &originalContractRoot },
+						Storage:      map[string]b.DiffString{},
+					},
+				},
+			},
+		},
+		{
+			"testBlock3",
+			//the contract's storage is changed
+			//and the block is mined by account 2
+			arguments{
+				oldStateRoot: block2.Root(),
+				newStateRoot: block3.Root(),
+				blockNumber:  block3.Number().Int64(),
+				blockHash:    block3.Hash(),
+			},
+			&b.StateDiff{
+				BlockNumber:     block3.Number().Int64(),
+				BlockHash:       block3.Hash(),
+				CreatedAccounts: map[common.Address]b.AccountDiffEventual{},
+				DeletedAccounts: emptyAccountDiffEventualMap,
+				UpdatedAccounts: map[common.Address]b.AccountDiffIncremental{
+					account2Addr: {
+						Nonce:        b.DiffUint64{ Value: &nonce0 },
+						Balance:      b.DiffBigInt{ Value: big.NewInt(block2Account2Balance + miningReward) },
+						CodeHash:     "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+						ContractRoot: b.DiffString{ NewValue: &originalContractRoot },
+						Storage:      map[string]b.DiffString{},
+					},
+					contractAddr: {
+						Nonce:        b.DiffUint64{ Value: &nonce1 },
+						Balance:      b.DiffBigInt{ Value: big.NewInt(0) },
+						CodeHash:     "0x1c671ee4ae8abbacab7da59d6f8785cce8295eb086551ce7ac266a2e93666c0f",
+						ContractRoot: b.DiffString{ NewValue: &newContractRoot },
+						Storage:      map[string]b.DiffString{
+							"0x405787fa12a823e0f2b7631cc41b3ba8828b3321ca811111fa75cd3aa3bb5ace": {
+								NewValue: &newStorageValue,
+								OldValue: &oldStorageValue,
+							},
+						},
+					},
+					testBankAddress: {
+						Nonce:        b.DiffUint64{ Value: &nonce3 },
+						Balance:      b.DiffBigInt{ Value: big.NewInt(99989000) },
+						CodeHash:     "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+						ContractRoot: b.DiffString{ NewValue: &originalContractRoot },
+						Storage:      map[string]b.DiffString{},
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		arguments := test.startingArguments
+		diff, err := builder.BuildStateDiff(arguments.oldStateRoot, arguments.newStateRoot, arguments.blockNumber, arguments.blockHash)
+		if err != nil {
+			t.Error(err)
+		}
+
+		fields := []string{"BlockNumber", "BlockHash", "DeletedAccounts", "UpdatedAccounts", "CreatedAccounts"}
+
+		for _, field := range fields {
+			reflectionOfDiff := reflect.ValueOf(diff)
+			diffValue := reflect.Indirect(reflectionOfDiff).FieldByName(field)
+
+			reflectionOfExpected := reflect.ValueOf(test.expected)
+			expectedValue := reflect.Indirect(reflectionOfExpected).FieldByName(field)
+
+			diffValueInterface := diffValue.Interface()
+			expectedValueInterface := expectedValue.Interface()
+
+			if !equals(diffValueInterface, expectedValueInterface) {
+				t.Logf("Test failed: %s", test.name)
+				t.Errorf("field: %+v\nactual: %+v\nexpected: %+v", field, diffValueInterface, expectedValueInterface)
+			}
+		}
+	}
 }
-*/
+
+func equals(actual, expected interface{}) (success bool) {
+	if actualByteSlice, ok := actual.([]byte); ok {
+		if expectedByteSlice, ok := expected.([]byte); ok {
+			return bytes.Equal(actualByteSlice, expectedByteSlice)
+		}
+	}
+
+	return reflect.DeepEqual(actual, expected)
+}
 
 // makeChain creates a chain of n blocks starting at and including parent.
 // the returned hash chain is ordered head->parent. In addition, every 3rd block
@@ -98,205 +332,17 @@ func testChainGen(i int, block *core.BlockGen) {
 	}
 }
 
-var (
-	block0Hash, block1Hash, block2Hash, block3Hash common.Hash
-	block0, block1, block2, block3                 *types.Block
-	builder                                        b.Builder
-	miningReward                                   = int64(3000000000000000000)
-	burnAddress                                    = common.HexToAddress("0x0")
-	diff                                           *b.StateDiff
-	err                                            error
-)
+/*
+contract test {
 
-func TestBuilder(t *testing.T) {
-	_, blocks := makeChain(3, 0, genesis)
-	block0Hash = common.HexToHash("0xd1721cfd0b29c36fd7a68f25c128e86413fb666a6e1d68e89b875bd299262661")
-	block1Hash = common.HexToHash("0x47c398dd688eaa4dd11b006888156783fe32df83d59b197c0fcd303408103d39")
-	block2Hash = common.HexToHash("0x351b2f531838683ba457e8ca4d3a844cc48147dceafbcb589dc6e3227856ee75")
-	block3Hash = common.HexToHash("0xfa40fbe2d98d98b3363a778d52f2bcd29d6790b9b3f3cab2b167fd12d3550f73")
+    uint256[100] data;
 
-	block0 = blocks[block0Hash]
-	block1 = blocks[block1Hash]
-	block2 = blocks[block2Hash]
-	block3 = blocks[block3Hash]
-	builder = b.NewBuilder(testdb)
+    function Put(uint256 addr, uint256 value) {
+        data[addr] = value;
+    }
 
-	testEmptyDiff(t)
-	testBlock1(t)
-	testBlock2(t)
-	testBlock3(t)
+    function Get(uint256 addr) constant returns (uint256 value) {
+        return data[addr];
+    }
 }
-
-var errorString = "Actual and expected do not match"
-
-func testEmptyDiff(t *testing.T) {
-	expectedDiff := b.StateDiff{
-		BlockNumber:     block0.Number().Int64(),
-		BlockHash:       block0Hash,
-		CreatedAccounts: emptyAccountDiffEventualMap,
-		DeletedAccounts: emptyAccountDiffEventualMap,
-		UpdatedAccounts: emptyAccountDiffIncrementalMap,
-	}
-
-	diff, err := builder.BuildStateDiff(block0.Root(), block0.Root(), block0.Number().Int64(), block0Hash)
-	if err != nil {
-		t.Error(err)
-	}
-
-	if !equals(diff, &expectedDiff) {
-		t.Errorf("Actual and expected do not match:\nActual: %+v\nExpected: %+v", diff, expectedDiff)
-	}
-}
-
-func testBlock1(t *testing.T) {
-	//10000 transferred from testBankAddress to account1Addr
-	var balanceChange = int64(10000)
-
-	diff, err = builder.BuildStateDiff(block0.Root(), block1.Root(), block1.Number().Int64(), block1Hash)
-	if err != nil {
-		t.Error(err)
-	}
-
-	//it includes the block number and hash
-	if !equals(diff.BlockNumber, block1.Number().Int64()) { t.Errorf(errorString) }
-	if !equals(diff.BlockHash, block1Hash) { t.Errorf(errorString)}
-
-	//it returns an empty collection for deleted accounts
-	if !equals(diff.DeletedAccounts, emptyAccountDiffEventualMap) { t.Errorf(errorString)}
-
-	//it returns balance diffs for updated accounts
-	expectedBankBalanceDiff := b.DiffBigInt{
-		NewValue: big.NewInt(testBankFunds.Int64() - balanceChange),
-		OldValue: testBankFunds,
-	}
-
-	if !equals(len(diff.UpdatedAccounts), 1) { t.Errorf(errorString) }
-	if !equals(diff.UpdatedAccounts[testBankAddress].Balance, expectedBankBalanceDiff) { t.Errorf(errorString) }
-
-	//it returns balance diffs for new accounts
-	expectedAccount1BalanceDiff := b.DiffBigInt{
-		NewValue: big.NewInt(balanceChange),
-		OldValue: nil,
-	}
-
-	expectedBurnAddrBalanceDiff := b.DiffBigInt{
-		NewValue: big.NewInt(miningReward),
-		OldValue: nil,
-	}
-
-	if !equals(len(diff.CreatedAccounts), 2) {}
-	if !equals(diff.CreatedAccounts[account1Addr].Balance, expectedAccount1BalanceDiff) { t.Errorf(errorString) }
-	if !equals(diff.CreatedAccounts[burnAddress].Balance, expectedBurnAddrBalanceDiff) { t.Errorf(errorString) }
-}
-
-func testBlock2(t *testing.T) {
-	//1000 transferred from testBankAddress to account1Addr
-	//1000 transferred from account1Addr to account2Addr
-	var (
-		balanceChange         = int64(1000)
-		block1BankBalance     = int64(99990000)
-		block1Account1Balance = int64(10000)
-	)
-
-	diff, err = builder.BuildStateDiff(block1.Root(), block2.Root(), block2.Number().Int64(), block2Hash)
-	if err != nil {
-		t.Error(err)
-	}
-	//it includes the block number and hash
-	if !equals(diff.BlockNumber, block2.Number().Int64()) { t.Errorf(errorString)}
-	if !equals(diff.BlockHash, block2Hash) {}
-
-	//it returns an empty collection for deleted accounts
-	if !equals(diff.DeletedAccounts, emptyAccountDiffEventualMap) { t.Errorf(errorString) }
-
-	//it returns balance diffs for updated accounts
-	expectedBankBalanceDiff := b.DiffBigInt{
-		NewValue: big.NewInt(block1BankBalance - balanceChange),
-		OldValue: big.NewInt(block1BankBalance),
-	}
-
-	expectedAccount1BalanceDiff := b.DiffBigInt{
-		NewValue: big.NewInt(block1Account1Balance - balanceChange + balanceChange),
-		OldValue: big.NewInt(block1Account1Balance),
-	}
-
-	expectedBurnBalanceDiff := b.DiffBigInt{
-		NewValue: big.NewInt(miningReward + miningReward),
-		OldValue: big.NewInt(miningReward),
-	}
-
-	if !equals(len(diff.UpdatedAccounts), 3) { t.Errorf(errorString) }
-	if !equals(diff.UpdatedAccounts[testBankAddress].Balance, expectedBankBalanceDiff) { t.Errorf(errorString) }
-	if !equals(diff.UpdatedAccounts[account1Addr].Balance, expectedAccount1BalanceDiff) { t.Errorf(errorString) }
-	if !equals(diff.UpdatedAccounts[burnAddress].Balance, expectedBurnBalanceDiff) { t.Errorf(errorString) }
-
-	//it returns balance diffs for new accounts
-	expectedAccount2BalanceDiff := b.DiffBigInt{
-		NewValue: big.NewInt(balanceChange),
-		OldValue: nil,
-	}
-
-	expectedContractBalanceDiff := b.DiffBigInt{
-		NewValue: big.NewInt(0),
-		OldValue: nil,
-	}
-
-	if !equals(len(diff.CreatedAccounts), 2) { t.Errorf(errorString) }
-	if !equals(diff.CreatedAccounts[account2Addr].Balance, expectedAccount2BalanceDiff) { t.Errorf(errorString) }
-	if !equals(diff.CreatedAccounts[contractAddr].Balance, expectedContractBalanceDiff) { t.Errorf(errorString) }
-}
-
-func testBlock3(t *testing.T) {
-	diff, err = builder.BuildStateDiff(block2.Root(), block3.Root(), block3.Number().Int64(), block3Hash)
-	if err != nil {
-		t.Error(err)
-	}
-
-	//it includes the block number and hash
-	if !equals(diff.BlockNumber, block3.Number().Int64()) { t.Errorf(errorString) }
-	if !equals(diff.BlockHash, block3Hash) { t.Errorf(errorString) }
-
-	//it returns an empty collection for deleted accounts
-	if !equals(diff.DeletedAccounts, emptyAccountDiffEventualMap) { t.Errorf(errorString) }
-
-	//it returns an empty collection for created accounts
-	if !equals(diff.CreatedAccounts, emptyAccountDiffEventualMap) { t.Errorf(errorString) }
-
-	//it returns balance, storage and nonce diffs for updated accounts
-		block2Account2Balance := int64(1000)
-		expectedAcct2BalanceDiff := b.DiffBigInt{
-			NewValue: big.NewInt(block2Account2Balance + miningReward),
-			OldValue: big.NewInt(block2Account2Balance),
-		}
-
-		expectedContractStorageDiff := make(map[string]b.DiffString)
-		newVal := "0x03"
-		oldVal := "0x0"
-		path := "0x405787fa12a823e0f2b7631cc41b3ba8828b3321ca811111fa75cd3aa3bb5ace"
-		expectedContractStorageDiff[path] = b.DiffString{
-			NewValue: &newVal,
-			OldValue: &oldVal,
-		}
-
-		oldNonce := uint64(2)
-		newNonce := uint64(3)
-		expectedBankNonceDiff := b.DiffUint64{
-			NewValue: &newNonce,
-			OldValue: &oldNonce,
-		}
-
-	if !equals(len(diff.UpdatedAccounts), 3) { t.Errorf(errorString) }
-	if !equals(diff.UpdatedAccounts[account2Addr].Balance, expectedAcct2BalanceDiff) { t.Errorf(errorString) }
-	if !equals(diff.UpdatedAccounts[contractAddr].Storage, expectedContractStorageDiff) { t.Errorf(errorString) }
-	if !equals(diff.UpdatedAccounts[testBankAddress].Nonce, expectedBankNonceDiff) { t.Errorf(errorString) }
-}
-
-func equals(actual, expected interface{}) (success bool) {
-	if actualByteSlice, ok := actual.([]byte); ok {
-		if expectedByteSlice, ok := expected.([]byte); ok {
-			return bytes.Equal(actualByteSlice, expectedByteSlice)
-		}
-	}
-
-	return reflect.DeepEqual(actual, expected)
-}
+*/
