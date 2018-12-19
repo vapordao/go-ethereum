@@ -76,11 +76,5 @@ type DiffString struct {
 	NewValue *string `json:"newValue"  gencodec:"optional"`
 	OldValue *string `json:"oldValue"  gencodec:"optional"`
 }
-type DiffUint64 struct {
-	NewValue *uint64 `json:"newValue"  gencodec:"optional"`
-	OldValue *uint64 `json:"oldValue"  gencodec:"optional"`
-}
-type DiffBigInt struct {
-	NewValue *big.Int `json:"newValue"  gencodec:"optional"`
-	OldValue *big.Int `json:"oldValue"  gencodec:"optional"`
-}
+type DiffUint64 struct { Value *uint64 `json:"value"  gencodec:"optional"` }
+type DiffBigInt struct { Value *big.Int `json:"value"  gencodec:"optional"` }

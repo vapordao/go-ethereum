@@ -156,22 +156,13 @@ func (sdb *builder) buildDiffEventual(accounts map[common.Address]*state.Account
 		}
 
 		codeBytes, err := sdb.chainDB.Get(val.CodeHash)
-
 		codeHash := hexutil.Encode(val.CodeHash)
 		hexRoot := val.Root.Hex()
 
 		if created {
-			nonce := DiffUint64{
-				NewValue: &val.Nonce,
-			}
-
-			balance := DiffBigInt{
-				NewValue: val.Balance,
-			}
-
-			contractRoot := DiffString{
-				NewValue: &hexRoot,
-			}
+			nonce := DiffUint64{ Value: &val.Nonce }
+			balance := DiffBigInt{ Value: val.Balance }
+			contractRoot := DiffString{ NewValue: &hexRoot }
 			accountDiffs[addr] = AccountDiffEventual{
 				Nonce:        nonce,
 				Balance:      balance,
@@ -181,15 +172,9 @@ func (sdb *builder) buildDiffEventual(accounts map[common.Address]*state.Account
 				Storage:      storageDiffs,
 			}
 		} else {
-			nonce := DiffUint64{
-				OldValue: &val.Nonce,
-			}
-			balance := DiffBigInt{
-				OldValue: val.Balance,
-			}
-			contractRoot := DiffString{
-				OldValue: &hexRoot,
-			}
+			nonce := DiffUint64{ Value: &val.Nonce }
+			balance := DiffBigInt{ Value: val.Balance }
+			contractRoot := DiffString{ OldValue: &hexRoot }
 			accountDiffs[addr] = AccountDiffEventual{
 				Nonce:        nonce,
 				Balance:      balance,
@@ -214,23 +199,12 @@ func (sdb *builder) buildDiffIncremental(creations map[common.Address]*state.Acc
 			log.Error("Failed building storage diffs", "Address", val, "error", err)
 			return nil, err
 		} else {
-			nonce := DiffUint64{
-				NewValue: &createdAcc.Nonce,
-				OldValue: &deletedAcc.Nonce,
-			}
-
-			balance := DiffBigInt{
-				NewValue: createdAcc.Balance,
-				OldValue: deletedAcc.Balance,
-			}
+			nonce := DiffUint64{ Value: &createdAcc.Nonce }
+			balance := DiffBigInt{ Value: createdAcc.Balance }
 			codeHash := hexutil.Encode(createdAcc.CodeHash)
 
 			nHexRoot := createdAcc.Root.Hex()
-			oHexRoot := deletedAcc.Root.Hex()
-			contractRoot := DiffString{
-				NewValue: &nHexRoot,
-				OldValue: &oHexRoot,
-			}
+			contractRoot := DiffString{ NewValue: &nHexRoot }
 
 			updatedAccounts[common.HexToAddress(val)] = AccountDiffIncremental{
 				Nonce:        nonce,
