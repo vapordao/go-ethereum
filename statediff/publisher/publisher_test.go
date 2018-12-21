@@ -22,6 +22,7 @@ var (
 	publisher      p.Publisher
 	dir            string
 	err            error
+    testFailedFormatString = "Test failed: %s, %+v"
 )
 
 var expectedCreatedAccountRow = []string{
@@ -86,43 +87,46 @@ func TestPublisher(t *testing.T) {
 
 	for _, test := range tests {
 		test(t)
-		removeFilesFromDir(dir, t)
+		err := removeFilesFromDir(dir)
+		if err != nil {
+			t.Error("Error removing files from temp dir: %s", dir)
+		}
 	}
 }
 
-func removeFilesFromDir(dir string, t *testing.T) {
+func removeFilesFromDir(dir string,) error {
 	files, err := filepath.Glob(filepath.Join(dir, "*"))
 	if err != nil {
-		t.Error()
+		return err
 	}
 
 	for _, file := range files {
 		err = os.RemoveAll(file)
 		if err != nil {
-			t.Error()
+			return err
 		}
 	}
+	return nil
 }
 
 func testColumnHeaders(t *testing.T) {
 	_, err = publisher.PublishStateDiff(&testhelpers.TestStateDiff)
 	if err != nil {
-		t.Error(err)
+		t.Errorf(testFailedFormatString, t.Name(), err)
 	}
 
 	file, err := getTestDiffFile(dir)
 	if err != nil {
-		t.Error(err)
+		t.Errorf(testFailedFormatString, t.Name(), err)
 	}
 
 	lines, err := csv.NewReader(file).ReadAll()
 	if err != nil {
-		t.Error(err)
+		t.Errorf(testFailedFormatString, t.Name(), err)
 	}
-	if len(lines) <= 1 {
-		t.Error()
+	if len(lines) < 1 {
+		t.Errorf(testFailedFormatString, t.Name(), err)
 	}
-
 	if !equals(lines[0], p.Headers) {
 		t.Error()
 	}
@@ -132,51 +136,52 @@ func testAccountDiffs(t *testing.T) {
 	// it persists the created, updated and deleted account diffs to a CSV file
 	_, err = publisher.PublishStateDiff(&testhelpers.TestStateDiff)
 	if err != nil {
-		t.Error(err)
+		t.Errorf(testFailedFormatString, t.Name(), err)
 	}
 
 	file, err := getTestDiffFile(dir)
 	if err != nil {
-		t.Error(err)
+		t.Errorf(testFailedFormatString, t.Name(), err)
 	}
 
 	lines, err := csv.NewReader(file).ReadAll()
 	if err != nil {
-		t.Error(err)
+		t.Errorf(testFailedFormatString, t.Name(), err)
 	}
 	if len(lines) <= 3 {
-		t.Error()
+		t.Errorf(testFailedFormatString, t.Name(), err)
 	}
 	if !equals(lines[1], expectedCreatedAccountRow) {
-		t.Error()
+		t.Errorf(testFailedFormatString, t.Name(), err)
 	}
 	if !equals(lines[2], expectedUpdatedAccountRow) {
-		t.Error()
+		t.Errorf(testFailedFormatString, t.Name(), err)
 	}
 	if !equals(lines[3], expectedDeletedAccountRow) {
-		t.Error()
+		t.Errorf(testFailedFormatString, t.Name(), err)
 	}
 }
 
 func testWhenNoDiff(t *testing.T) {
-	//it creates an empty CSV when there is no diff", func() {
+	//it creates an empty CSV when there is no diff
 	emptyDiff := builder.StateDiff{}
 	_, err = publisher.PublishStateDiff(&emptyDiff)
 	if err != nil {
-		t.Error(err)
+		t.Errorf(testFailedFormatString, t.Name(), err)
 	}
 
 	file, err := getTestDiffFile(dir)
 	if err != nil {
-		t.Error(err)
+		t.Errorf(testFailedFormatString, t.Name(), err)
 	}
 
 	lines, err := csv.NewReader(file).ReadAll()
 	if err != nil {
-		t.Error(err)
+		t.Errorf(testFailedFormatString, t.Name(), err)
 	}
+
 	if !equals(len(lines), 1) {
-		t.Error()
+		t.Errorf(testFailedFormatString, t.Name(), err)
 	}
 }
 
@@ -185,28 +190,28 @@ func testDefaultPublisher(t *testing.T) {
 	config := statediff.Config{Path: dir}
 	publisher, err = p.NewPublisher(config)
 	if err != nil {
-		t.Error(err)
+		t.Errorf(testFailedFormatString, t.Name(), err)
 	}
 
 	_, err = publisher.PublishStateDiff(&testhelpers.TestStateDiff)
 	if err != nil {
-		t.Error(err)
+		t.Errorf(testFailedFormatString, t.Name(), err)
 	}
 
 	file, err := getTestDiffFile(dir)
 	if err != nil {
-		t.Error(err)
+		t.Errorf(testFailedFormatString, t.Name(), err)
 	}
 
 	lines, err := csv.NewReader(file).ReadAll()
 	if err != nil {
-		t.Error(err)
+		t.Errorf(testFailedFormatString, t.Name(), err)
 	}
 	if !equals(len(lines), 4) {
-		t.Error()
+		t.Errorf(testFailedFormatString, t.Name(), err)
 	}
 	if !equals(lines[0], p.Headers) {
-		t.Error()
+		t.Errorf(testFailedFormatString, t.Name(), err)
 	}
 }
 
@@ -215,33 +220,33 @@ func testDefaultDirectory(t *testing.T) {
 	config := statediff.Config{}
 	publisher, err = p.NewPublisher(config)
 	if err != nil {
-		t.Error(err)
+		t.Errorf(testFailedFormatString, t.Name(), err)
 	}
 
 	err := os.Chdir(dir)
 	if err != nil {
-		t.Error(err)
+		t.Errorf(testFailedFormatString, t.Name(), err)
 	}
 
 	_, err = publisher.PublishStateDiff(&testhelpers.TestStateDiff)
 	if err != nil {
-		t.Error(err)
+		t.Errorf(testFailedFormatString, t.Name(), err)
 	}
 
 	file, err := getTestDiffFile(dir)
 	if err != nil {
-		t.Error(err)
+		t.Errorf(testFailedFormatString, t.Name(), err)
 	}
 
 	lines, err := csv.NewReader(file).ReadAll()
 	if err != nil {
-		t.Error(err)
+		t.Errorf(testFailedFormatString, t.Name(), err)
 	}
 	if !equals(len(lines), 4) {
-		t.Error()
+		t.Errorf(testFailedFormatString, t.Name(), err)
 	}
 	if !equals(lines[0], p.Headers) {
-		t.Error()
+		t.Errorf(testFailedFormatString, t.Name(), err)
 	}
 }
 

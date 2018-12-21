@@ -58,16 +58,19 @@ func testServiceLoop(t *testing.T) {
 	//parent and current blocks are passed to the extractor
 	expectedCurrentBlocks := []types.Block{*block1, *block2}
 	if !reflect.DeepEqual(extractor.CurrentBlocks, expectedCurrentBlocks) {
-		t.Errorf("Actual does not equal expected.\nactual:%+v\nexpected: %+v", extractor.CurrentBlocks, expectedCurrentBlocks)
+		t.Error("Test failure:", t.Name())
+		t.Logf("Actual does not equal expected.\nactual:%+v\nexpected: %+v", extractor.CurrentBlocks, expectedCurrentBlocks)
 	}
 	expectedParentBlocks := []types.Block{*parentBlock1, *parentBlock2}
 	if !reflect.DeepEqual(extractor.ParentBlocks, expectedParentBlocks) {
-		t.Errorf("Actual does not equal expected.\nactual:%+v\nexpected: %+v", extractor.CurrentBlocks, expectedParentBlocks)
+		t.Error("Test failure:", t.Name())
+		t.Logf("Actual does not equal expected.\nactual:%+v\nexpected: %+v", extractor.CurrentBlocks, expectedParentBlocks)
 	}
 
 	//look up the parent block from its hash
 	expectedHashes := []common.Hash{block1.ParentHash(), block2.ParentHash()}
 	if !reflect.DeepEqual(blockChain.ParentHashesLookedUp, expectedHashes) {
-		t.Errorf("Actual does not equal expected.\nactual:%+v\nexpected: %+v", blockChain.ParentHashesLookedUp, expectedHashes)
+		t.Error("Test failure:", t.Name())
+		t.Logf("Actual does not equal expected.\nactual:%+v\nexpected: %+v", blockChain.ParentHashesLookedUp, expectedHashes)
 	}
 }
