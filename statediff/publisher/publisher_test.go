@@ -76,7 +76,8 @@ func TestPublisher(t *testing.T) {
 
 	type Test func(t *testing.T)
 
-	var tests = []Test{testColumnHeaders,
+	var tests = []Test{
+		testColumnHeaders,
 		testAccountDiffs,
 		testWhenNoDiff,
 		testDefaultPublisher,

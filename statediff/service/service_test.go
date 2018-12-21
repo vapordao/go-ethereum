@@ -7,54 +7,10 @@ import (
 	service2 "github.com/ethereum/go-ethereum/statediff/service"
 	"reflect"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/event"
 	"math/big"
 	"math/rand"
+	"github.com/ethereum/go-ethereum/statediff/testhelpers/mocks"
 )
-
-type MockExtractor struct {
-	ParentBlocks []types.Block
-	CurrentBlocks  []types.Block
-	extractError  error
-}
-
-func (me *MockExtractor) ExtractStateDiff(parent, current types.Block) (string, error) {
-	me.ParentBlocks = append(me.ParentBlocks, parent)
-	me.CurrentBlocks = append(me.CurrentBlocks, current)
-
-	return "", me.extractError
-}
-
-func (me *MockExtractor) SetExtractError(err error) {
-	me.extractError = err
-}
-
-type MockChain struct {
-	ParentHashesLookedUp []common.Hash
-	parentBlocksToReturn []*types.Block
-	callCount int
-}
-
-func (mc *MockChain) SetParentBlockToReturn(blocks []*types.Block) {
-	mc.parentBlocksToReturn = blocks
-}
-
-func (mc *MockChain) GetBlockByHash(hash common.Hash) *types.Block {
-	mc.ParentHashesLookedUp = append(mc.ParentHashesLookedUp, hash)
-
-	var parentBlock types.Block
-	if len(mc.parentBlocksToReturn) > 0 {
-		parentBlock = *mc.parentBlocksToReturn[mc.callCount]
-	}
-
-	mc.callCount++
-	return &parentBlock
-}
-
-func (MockChain) SubscribeChainEvent(ch chan<- core.ChainEvent) event.Subscription {
-	panic("implement me")
-}
-
 func TestServiceLoop(t *testing.T) {
 	testServiceLoop(t)
 }
@@ -85,10 +41,10 @@ func testServiceLoop(t *testing.T) {
 	eventsChannel <- event1
 	eventsChannel <- event2
 
-	extractor := MockExtractor{}
+	extractor := mocks.Extractor{}
 	close(eventsChannel)
 
-	blockChain := MockChain{}
+	blockChain := mocks.BlockChain{}
 	service  := service2.StateDiffService{
 		Builder:    nil,
 		Extractor:  &extractor,
