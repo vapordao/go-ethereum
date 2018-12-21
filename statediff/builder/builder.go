@@ -21,12 +21,12 @@ package builder
 
 import (
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 type Builder interface {
@@ -160,9 +160,9 @@ func (sdb *builder) buildDiffEventual(accounts map[common.Address]*state.Account
 		hexRoot := val.Root.Hex()
 
 		if created {
-			nonce := DiffUint64{ Value: &val.Nonce }
-			balance := DiffBigInt{ Value: val.Balance }
-			contractRoot := DiffString{ Value: &hexRoot }
+			nonce := DiffUint64{Value: &val.Nonce}
+			balance := DiffBigInt{Value: val.Balance}
+			contractRoot := DiffString{Value: &hexRoot}
 			accountDiffs[addr] = AccountDiffEventual{
 				Nonce:        nonce,
 				Balance:      balance,
@@ -172,9 +172,9 @@ func (sdb *builder) buildDiffEventual(accounts map[common.Address]*state.Account
 				Storage:      storageDiffs,
 			}
 		} else {
-			nonce := DiffUint64{ Value: &val.Nonce }
-			balance := DiffBigInt{ Value: val.Balance }
-			contractRoot := DiffString{ Value: &hexRoot }
+			nonce := DiffUint64{Value: &val.Nonce}
+			balance := DiffBigInt{Value: val.Balance}
+			contractRoot := DiffString{Value: &hexRoot}
 			accountDiffs[addr] = AccountDiffEventual{
 				Nonce:        nonce,
 				Balance:      balance,
@@ -199,12 +199,12 @@ func (sdb *builder) buildDiffIncremental(creations map[common.Address]*state.Acc
 			log.Error("Failed building storage diffs", "Address", val, "error", err)
 			return nil, err
 		} else {
-			nonce := DiffUint64{ Value: &createdAcc.Nonce }
-			balance := DiffBigInt{ Value: createdAcc.Balance }
+			nonce := DiffUint64{Value: &createdAcc.Nonce}
+			balance := DiffBigInt{Value: createdAcc.Balance}
 			codeHash := hexutil.Encode(createdAcc.CodeHash)
 
 			nHexRoot := createdAcc.Root.Hex()
-			contractRoot := DiffString{ Value: &nHexRoot }
+			contractRoot := DiffString{Value: &nHexRoot}
 
 			updatedAccounts[common.HexToAddress(val)] = AccountDiffIncremental{
 				Nonce:        nonce,

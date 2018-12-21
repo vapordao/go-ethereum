@@ -2,15 +2,15 @@ package mocks
 
 import (
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
 )
 
 type BlockChain struct {
 	ParentHashesLookedUp []common.Hash
 	parentBlocksToReturn []*types.Block
-	callCount int
+	callCount            int
 }
 
 func (mc *BlockChain) SetParentBlockToReturn(blocks []*types.Block) {
@@ -32,4 +32,3 @@ func (mc *BlockChain) GetBlockByHash(hash common.Hash) *types.Block {
 func (BlockChain) SubscribeChainEvent(ch chan<- core.ChainEvent) event.Subscription {
 	panic("implement me")
 }
-

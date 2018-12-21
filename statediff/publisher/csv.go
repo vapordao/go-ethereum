@@ -51,7 +51,6 @@ func (p *publisher) publishStateDiffToCSV(sd builder.StateDiff) error {
 	for _, row := range accumulateUpdatedAccountRows(sd) {
 		data = append(data, row)
 	}
-
 	for _, row := range accumulateDeletedAccountRows(sd) {
 		data = append(data, row)
 	}

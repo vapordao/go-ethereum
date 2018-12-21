@@ -10,14 +10,14 @@ import (
 	e "github.com/ethereum/go-ethereum/statediff/extractor"
 	p "github.com/ethereum/go-ethereum/statediff/publisher"
 
-	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/event"
 )
 
 type BlockChain interface {
-    SubscribeChainEvent(ch chan<- core.ChainEvent) event.Subscription
-    GetBlockByHash(hash common.Hash) *types.Block
+	SubscribeChainEvent(ch chan<- core.ChainEvent) event.Subscription
+	GetBlockByHash(hash common.Hash) *types.Block
 }
 
 type StateDiffService struct {

@@ -1,15 +1,15 @@
 package extractor_test
 
 import (
-	"testing"
-	"math/big"
-	"math/rand"
+	"bytes"
+	"github.com/ethereum/go-ethereum/core/types"
 	b "github.com/ethereum/go-ethereum/statediff/builder"
 	e "github.com/ethereum/go-ethereum/statediff/extractor"
-	"github.com/ethereum/go-ethereum/core/types"
-	"bytes"
-	"reflect"
 	"github.com/ethereum/go-ethereum/statediff/testhelpers/mocks"
+	"math/big"
+	"math/rand"
+	"reflect"
+	"testing"
 )
 
 var publisher mocks.Publisher
@@ -56,10 +56,18 @@ func testBuildStateDiffStruct(t *testing.T) {
 		t.Error(err)
 	}
 
-	if !equals(builder.OldStateRoot, parentBlock.Root()) { t.Error()}
-	if !equals(builder.NewStateRoot, currentBlock.Root()) { t.Error()}
-	if !equals(builder.BlockNumber,currentBlockNumber.Int64()) { t.Error()}
-	if !equals(builder.BlockHash, currentBlock.Hash()) { t.Error()}
+	if !equals(builder.OldStateRoot, parentBlock.Root()) {
+		t.Error()
+	}
+	if !equals(builder.NewStateRoot, currentBlock.Root()) {
+		t.Error()
+	}
+	if !equals(builder.BlockNumber, currentBlockNumber.Int64()) {
+		t.Error()
+	}
+	if !equals(builder.BlockHash, currentBlock.Hash()) {
+		t.Error()
+	}
 }
 
 func testBuildStateDiffErrorHandling(t *testing.T) {
@@ -70,7 +78,9 @@ func testBuildStateDiffErrorHandling(t *testing.T) {
 		t.Error(err)
 	}
 
-	if !equals(err, mocks.Error) { t.Error() }
+	if !equals(err, mocks.Error) {
+		t.Error()
+	}
 	builder.SetBuilderError(nil)
 }
 
@@ -82,7 +92,9 @@ func testPublishingStateDiff(t *testing.T) {
 		t.Error(err)
 	}
 
-	if !equals(publisher.StateDiff, &expectedStateDiff) { t.Error() }
+	if !equals(publisher.StateDiff, &expectedStateDiff) {
+		t.Error()
+	}
 }
 
 func testPublisherErrorHandling(t *testing.T) {
@@ -92,7 +104,9 @@ func testPublisherErrorHandling(t *testing.T) {
 	if err == nil {
 		t.Error("Expected an error, but it didn't occur.")
 	}
-	if !equals(err, mocks.Error) { t.Error() }
+	if !equals(err, mocks.Error) {
+		t.Error()
+	}
 
 	publisher.SetPublisherError(nil)
 }

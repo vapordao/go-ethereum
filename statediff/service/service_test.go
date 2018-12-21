@@ -1,16 +1,17 @@
 package service_test
 
 import (
-	"testing"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core"
-	service2 "github.com/ethereum/go-ethereum/statediff/service"
-	"reflect"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core/types"
+	service2 "github.com/ethereum/go-ethereum/statediff/service"
+	"github.com/ethereum/go-ethereum/statediff/testhelpers/mocks"
 	"math/big"
 	"math/rand"
-	"github.com/ethereum/go-ethereum/statediff/testhelpers/mocks"
+	"reflect"
+	"testing"
 )
+
 func TestServiceLoop(t *testing.T) {
 	testServiceLoop(t)
 }
@@ -27,14 +28,14 @@ var (
 	parentHash1 = parentBlock1.Hash()
 	parentHash2 = parentBlock2.Hash()
 
-	header1 = types.Header{ ParentHash: parentHash1 }
-	header2 = types.Header{ ParentHash: parentHash2 }
+	header1 = types.Header{ParentHash: parentHash1}
+	header2 = types.Header{ParentHash: parentHash2}
 
 	block1 = types.NewBlock(&header1, nil, nil, nil)
 	block2 = types.NewBlock(&header2, nil, nil, nil)
 
-	event1 = core.ChainEvent{ Block: block1 }
-	event2 = core.ChainEvent{ Block: block2 }
+	event1 = core.ChainEvent{Block: block1}
+	event2 = core.ChainEvent{Block: block2}
 )
 
 func testServiceLoop(t *testing.T) {
@@ -45,7 +46,7 @@ func testServiceLoop(t *testing.T) {
 	close(eventsChannel)
 
 	blockChain := mocks.BlockChain{}
-	service  := service2.StateDiffService{
+	service := service2.StateDiffService{
 		Builder:    nil,
 		Extractor:  &extractor,
 		BlockChain: &blockChain,

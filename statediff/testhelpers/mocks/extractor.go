@@ -3,8 +3,8 @@ package mocks
 import "github.com/ethereum/go-ethereum/core/types"
 
 type Extractor struct {
-	ParentBlocks []types.Block
-	CurrentBlocks  []types.Block
+	ParentBlocks  []types.Block
+	CurrentBlocks []types.Block
 	extractError  error
 }
 
@@ -18,4 +18,3 @@ func (me *Extractor) ExtractStateDiff(parent, current types.Block) (string, erro
 func (me *Extractor) SetExtractError(err error) {
 	me.extractError = err
 }
-

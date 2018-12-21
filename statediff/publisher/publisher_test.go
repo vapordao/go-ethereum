@@ -1,19 +1,19 @@
 package publisher_test
 
 import (
-	"testing"
-	"os"
-	"strconv"
-	"github.com/ethereum/go-ethereum/statediff/testhelpers"
-	p "github.com/ethereum/go-ethereum/statediff/publisher"
-	"io/ioutil"
-	"github.com/ethereum/go-ethereum/statediff"
-	"encoding/csv"
-	"path/filepath"
 	"bytes"
-	"reflect"
+	"encoding/csv"
+	"github.com/ethereum/go-ethereum/statediff"
 	"github.com/ethereum/go-ethereum/statediff/builder"
+	p "github.com/ethereum/go-ethereum/statediff/publisher"
+	"github.com/ethereum/go-ethereum/statediff/testhelpers"
 	"github.com/pkg/errors"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"reflect"
+	"strconv"
+	"testing"
 )
 
 var (
@@ -98,7 +98,7 @@ func removeFilesFromDir(dir string, t *testing.T) {
 
 	for _, file := range files {
 		err = os.RemoveAll(file)
-		if err !=nil {
+		if err != nil {
 			t.Error()
 		}
 	}
@@ -119,9 +119,13 @@ func testColumnHeaders(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if len(lines) <= 1 { t.Error() }
+	if len(lines) <= 1 {
+		t.Error()
+	}
 
-	if !equals(lines[0], p.Headers) { t.Error() }
+	if !equals(lines[0], p.Headers) {
+		t.Error()
+	}
 }
 
 func testAccountDiffs(t *testing.T) {
@@ -140,10 +144,18 @@ func testAccountDiffs(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if len(lines) <= 3 { t.Error() }
-	if !equals(lines[1], expectedCreatedAccountRow) { t.Error() }
-	if !equals(lines[2], expectedUpdatedAccountRow) { t.Error()}
-	if !equals(lines[3], expectedDeletedAccountRow) { t.Error()}
+	if len(lines) <= 3 {
+		t.Error()
+	}
+	if !equals(lines[1], expectedCreatedAccountRow) {
+		t.Error()
+	}
+	if !equals(lines[2], expectedUpdatedAccountRow) {
+		t.Error()
+	}
+	if !equals(lines[3], expectedDeletedAccountRow) {
+		t.Error()
+	}
 }
 
 func testWhenNoDiff(t *testing.T) {
@@ -163,52 +175,84 @@ func testWhenNoDiff(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if !equals(len(lines), 1) { t.Error() }
+	if !equals(len(lines), 1) {
+		t.Error()
+	}
 }
 
 func testDefaultPublisher(t *testing.T) {
 	//it defaults to publishing state diffs to a CSV file when no mode is configured
 	config := statediff.Config{Path: dir}
 	publisher, err = p.NewPublisher(config)
-	if err != nil { t.Error(err) }
+	if err != nil {
+		t.Error(err)
+	}
 
 	_, err = publisher.PublishStateDiff(&testhelpers.TestStateDiff)
-	if err != nil { t.Error(err) }
+	if err != nil {
+		t.Error(err)
+	}
 
 	file, err := getTestDiffFile(dir)
-	if err != nil { t.Error(err) }
+	if err != nil {
+		t.Error(err)
+	}
 
 	lines, err := csv.NewReader(file).ReadAll()
-	if err != nil { t.Error(err) }
-	if !equals(len(lines), 4) { t.Error()}
-	if !equals(lines[0],p.Headers) { t.Error()}
+	if err != nil {
+		t.Error(err)
+	}
+	if !equals(len(lines), 4) {
+		t.Error()
+	}
+	if !equals(lines[0], p.Headers) {
+		t.Error()
+	}
 }
 
 func testDefaultDirectory(t *testing.T) {
 	//it defaults to publishing CSV files in the current directory when no path is configured
 	config := statediff.Config{}
 	publisher, err = p.NewPublisher(config)
-	if err != nil { t.Error(err) }
+	if err != nil {
+		t.Error(err)
+	}
 
 	err := os.Chdir(dir)
-	if err != nil { t.Error(err) }
+	if err != nil {
+		t.Error(err)
+	}
 
 	_, err = publisher.PublishStateDiff(&testhelpers.TestStateDiff)
-	if err != nil { t.Error(err) }
+	if err != nil {
+		t.Error(err)
+	}
 
 	file, err := getTestDiffFile(dir)
-	if err != nil { t.Error(err) }
+	if err != nil {
+		t.Error(err)
+	}
 
 	lines, err := csv.NewReader(file).ReadAll()
-	if err != nil { t.Error(err) }
-	if !equals(len(lines), 4) { t.Error() }
-	if !equals(lines[0], p.Headers) { t.Error() }
+	if err != nil {
+		t.Error(err)
+	}
+	if !equals(len(lines), 4) {
+		t.Error()
+	}
+	if !equals(lines[0], p.Headers) {
+		t.Error()
+	}
 }
 
 func getTestDiffFile(dir string) (*os.File, error) {
 	files, err := ioutil.ReadDir(dir)
-	if err != nil { return nil, err }
-	if len(files) == 0 { return nil, errors.New("There are 0 files.") }
+	if err != nil {
+		return nil, err
+	}
+	if len(files) == 0 {
+		return nil, errors.New("There are 0 files.")
+	}
 
 	fileName := files[0].Name()
 	filePath := filepath.Join(dir, fileName)

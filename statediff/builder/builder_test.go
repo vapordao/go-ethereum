@@ -1,18 +1,18 @@
 package builder_test
 
 import (
-	"testing"
-	"math/big"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/common"
-	b "github.com/ethereum/go-ethereum/statediff/builder"
-	"github.com/ethereum/go-ethereum/core/types"
 	"bytes"
-	"reflect"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus/ethash"
+	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/params"
+	b "github.com/ethereum/go-ethereum/statediff/builder"
+	"math/big"
+	"reflect"
+	"testing"
 )
 
 var (
@@ -57,30 +57,30 @@ func TestBuilder(t *testing.T) {
 	type arguments struct {
 		oldStateRoot common.Hash
 		newStateRoot common.Hash
-		blockNumber int64
-		blockHash common.Hash
+		blockNumber  int64
+		blockHash    common.Hash
 	}
 
 	var (
-		balanceChange10000 = int64(10000)
-		balanceChange1000 = int64(1000)
+		balanceChange10000    = int64(10000)
+		balanceChange1000     = int64(1000)
 		block1BankBalance     = int64(99990000)
 		block1Account1Balance = int64(10000)
 		block2Account2Balance = int64(1000)
-		nonce0 = uint64(0)
-		nonce1 = uint64(1)
-		nonce2 = uint64(2)
-		nonce3 = uint64(3)
-		originalContractRoot = "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"
-		newContractRoot = "0x9e676b23802aff85d29b4f0243939bc6ecfdca2a41532310091781854d6ffeb2"
-		newStorageValue = "0x03"
+		nonce0                = uint64(0)
+		nonce1                = uint64(1)
+		nonce2                = uint64(2)
+		nonce3                = uint64(3)
+		originalContractRoot  = "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"
+		newContractRoot       = "0x9e676b23802aff85d29b4f0243939bc6ecfdca2a41532310091781854d6ffeb2"
+		newStorageValue       = "0x03"
 	)
 
-	var tests = []struct{
-		name string
+	var tests = []struct {
+		name              string
 		startingArguments arguments
-		expected *b.StateDiff
-	} {
+		expected          *b.StateDiff
+	}{
 		{
 			"testEmptyDiff",
 			arguments{
@@ -107,33 +107,33 @@ func TestBuilder(t *testing.T) {
 				blockHash:    block1Hash,
 			},
 			&b.StateDiff{
-				BlockNumber:     block1.Number().Int64(),
-				BlockHash:       block1.Hash(),
+				BlockNumber: block1.Number().Int64(),
+				BlockHash:   block1.Hash(),
 				CreatedAccounts: map[common.Address]b.AccountDiffEventual{
 					account1Addr: {
-						Nonce:        b.DiffUint64{ Value: &nonce0 },
-						Balance:      b.DiffBigInt{ Value: big.NewInt(balanceChange10000) },
+						Nonce:        b.DiffUint64{Value: &nonce0},
+						Balance:      b.DiffBigInt{Value: big.NewInt(balanceChange10000)},
 						Code:         nil,
 						CodeHash:     "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
-						ContractRoot: b.DiffString{ Value: &originalContractRoot },
+						ContractRoot: b.DiffString{Value: &originalContractRoot},
 						Storage:      map[string]b.DiffString{},
 					},
 					burnAddress: {
-						Nonce:        b.DiffUint64{ Value: &nonce0 },
-						Balance:      b.DiffBigInt{ Value: big.NewInt(miningReward)},
+						Nonce:        b.DiffUint64{Value: &nonce0},
+						Balance:      b.DiffBigInt{Value: big.NewInt(miningReward)},
 						Code:         nil,
 						CodeHash:     "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
-						ContractRoot: b.DiffString{ Value: &originalContractRoot },
+						ContractRoot: b.DiffString{Value: &originalContractRoot},
 						Storage:      map[string]b.DiffString{},
 					},
 				},
 				DeletedAccounts: emptyAccountDiffEventualMap,
 				UpdatedAccounts: map[common.Address]b.AccountDiffIncremental{
 					testBankAddress: {
-						Nonce:        b.DiffUint64{ Value: &nonce1 },
-						Balance:      b.DiffBigInt{ Value: big.NewInt(testBankFunds.Int64() - balanceChange10000) },
+						Nonce:        b.DiffUint64{Value: &nonce1},
+						Balance:      b.DiffBigInt{Value: big.NewInt(testBankFunds.Int64() - balanceChange10000)},
 						CodeHash:     "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
-						ContractRoot: b.DiffString{ Value: &originalContractRoot },
+						ContractRoot: b.DiffString{Value: &originalContractRoot},
 						Storage:      map[string]b.DiffString{},
 					},
 				},
@@ -150,47 +150,47 @@ func TestBuilder(t *testing.T) {
 				blockHash:    block2Hash,
 			},
 			&b.StateDiff{
-				BlockNumber:     block2.Number().Int64(),
-				BlockHash:       block2.Hash(),
+				BlockNumber: block2.Number().Int64(),
+				BlockHash:   block2.Hash(),
 				CreatedAccounts: map[common.Address]b.AccountDiffEventual{
 					account2Addr: {
-						Nonce:        b.DiffUint64{ Value: &nonce0 },
-						Balance:      b.DiffBigInt{ Value: big.NewInt(balanceChange1000) },
+						Nonce:        b.DiffUint64{Value: &nonce0},
+						Balance:      b.DiffBigInt{Value: big.NewInt(balanceChange1000)},
 						Code:         nil,
 						CodeHash:     "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
-						ContractRoot: b.DiffString{ Value: &originalContractRoot},
+						ContractRoot: b.DiffString{Value: &originalContractRoot},
 						Storage:      map[string]b.DiffString{},
 					},
 					contractAddr: {
-						Nonce:        b.DiffUint64{ Value: &nonce1 },
-						Balance:      b.DiffBigInt{ Value: big.NewInt(0) },
+						Nonce:        b.DiffUint64{Value: &nonce1},
+						Balance:      b.DiffBigInt{Value: big.NewInt(0)},
 						Code:         []byte{96, 96, 96, 64, 82, 96, 0, 53, 124, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 144, 4, 128, 99, 96, 205, 38, 133, 20, 96, 65, 87, 128, 99, 193, 100, 49, 185, 20, 96, 107, 87, 96, 63, 86, 91, 0, 91, 96, 85, 96, 4, 128, 128, 53, 144, 96, 32, 1, 144, 145, 144, 80, 80, 96, 169, 86, 91, 96, 64, 81, 128, 130, 129, 82, 96, 32, 1, 145, 80, 80, 96, 64, 81, 128, 145, 3, 144, 243, 91, 96, 136, 96, 4, 128, 128, 53, 144, 96, 32, 1, 144, 145, 144, 128, 53, 144, 96, 32, 1, 144, 145, 144, 80, 80, 96, 138, 86, 91, 0, 91, 128, 96, 0, 96, 0, 80, 131, 96, 100, 129, 16, 21, 96, 2, 87, 144, 144, 1, 96, 0, 91, 80, 129, 144, 85, 80, 91, 80, 80, 86, 91, 96, 0, 96, 0, 96, 0, 80, 130, 96, 100, 129, 16, 21, 96, 2, 87, 144, 144, 1, 96, 0, 91, 80, 84, 144, 80, 96, 199, 86, 91, 145, 144, 80, 86},
 						CodeHash:     "0x1c671ee4ae8abbacab7da59d6f8785cce8295eb086551ce7ac266a2e93666c0f",
-						ContractRoot: b.DiffString{ Value: &originalContractRoot},
+						ContractRoot: b.DiffString{Value: &originalContractRoot},
 						Storage:      map[string]b.DiffString{},
 					},
 				},
 				DeletedAccounts: emptyAccountDiffEventualMap,
 				UpdatedAccounts: map[common.Address]b.AccountDiffIncremental{
 					testBankAddress: {
-						Nonce:        b.DiffUint64{ Value: &nonce2 },
-						Balance:      b.DiffBigInt{ Value: big.NewInt(block1BankBalance - balanceChange1000) },
+						Nonce:        b.DiffUint64{Value: &nonce2},
+						Balance:      b.DiffBigInt{Value: big.NewInt(block1BankBalance - balanceChange1000)},
 						CodeHash:     "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
-						ContractRoot: b.DiffString{ Value: &originalContractRoot },
+						ContractRoot: b.DiffString{Value: &originalContractRoot},
 						Storage:      map[string]b.DiffString{},
 					},
 					account1Addr: {
-						Nonce:        b.DiffUint64{ Value: &nonce2 },
-						Balance:      b.DiffBigInt{ Value: big.NewInt(block1Account1Balance - balanceChange1000 + balanceChange1000) },
+						Nonce:        b.DiffUint64{Value: &nonce2},
+						Balance:      b.DiffBigInt{Value: big.NewInt(block1Account1Balance - balanceChange1000 + balanceChange1000)},
 						CodeHash:     "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
-						ContractRoot: b.DiffString{ Value: &originalContractRoot },
+						ContractRoot: b.DiffString{Value: &originalContractRoot},
 						Storage:      map[string]b.DiffString{},
 					},
 					burnAddress: {
-						Nonce:        b.DiffUint64{ Value: &nonce0 },
-						Balance:      b.DiffBigInt{ Value: big.NewInt(miningReward + miningReward) },
+						Nonce:        b.DiffUint64{Value: &nonce0},
+						Balance:      b.DiffBigInt{Value: big.NewInt(miningReward + miningReward)},
 						CodeHash:     "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
-						ContractRoot: b.DiffString{ Value: &originalContractRoot },
+						ContractRoot: b.DiffString{Value: &originalContractRoot},
 						Storage:      map[string]b.DiffString{},
 					},
 				},
@@ -213,27 +213,27 @@ func TestBuilder(t *testing.T) {
 				DeletedAccounts: emptyAccountDiffEventualMap,
 				UpdatedAccounts: map[common.Address]b.AccountDiffIncremental{
 					account2Addr: {
-						Nonce:        b.DiffUint64{ Value: &nonce0 },
-						Balance:      b.DiffBigInt{ Value: big.NewInt(block2Account2Balance + miningReward) },
+						Nonce:        b.DiffUint64{Value: &nonce0},
+						Balance:      b.DiffBigInt{Value: big.NewInt(block2Account2Balance + miningReward)},
 						CodeHash:     "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
-						ContractRoot: b.DiffString{ Value: &originalContractRoot },
+						ContractRoot: b.DiffString{Value: &originalContractRoot},
 						Storage:      map[string]b.DiffString{},
 					},
 					contractAddr: {
-						Nonce:        b.DiffUint64{ Value: &nonce1 },
-						Balance:      b.DiffBigInt{ Value: big.NewInt(0) },
+						Nonce:        b.DiffUint64{Value: &nonce1},
+						Balance:      b.DiffBigInt{Value: big.NewInt(0)},
 						CodeHash:     "0x1c671ee4ae8abbacab7da59d6f8785cce8295eb086551ce7ac266a2e93666c0f",
-						ContractRoot: b.DiffString{ Value: &newContractRoot },
-						Storage:      map[string]b.DiffString{
+						ContractRoot: b.DiffString{Value: &newContractRoot},
+						Storage: map[string]b.DiffString{
 							"0x405787fa12a823e0f2b7631cc41b3ba8828b3321ca811111fa75cd3aa3bb5ace": {
-								Value: &newStorageValue },
+								Value: &newStorageValue},
 						},
 					},
 					testBankAddress: {
-						Nonce:        b.DiffUint64{ Value: &nonce3 },
-						Balance:      b.DiffBigInt{ Value: big.NewInt(99989000) },
+						Nonce:        b.DiffUint64{Value: &nonce3},
+						Balance:      b.DiffBigInt{Value: big.NewInt(99989000)},
 						CodeHash:     "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
-						ContractRoot: b.DiffString{ Value: &originalContractRoot },
+						ContractRoot: b.DiffString{Value: &originalContractRoot},
 						Storage:      map[string]b.DiffString{},
 					},
 				},

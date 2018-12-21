@@ -72,6 +72,12 @@ type AccountDiffIncremental struct {
 	Storage      map[string]DiffString `json:"storage"       gencodec:"required"`
 }
 
-type DiffString struct{ Value *string `json:"value"  gencodec:"optional"` }
-type DiffUint64 struct{ Value *uint64 `json:"value"  gencodec:"optional"` }
-type DiffBigInt struct{ Value *big.Int `json:"value"  gencodec:"optional"` }
+type DiffString struct {
+	Value *string `json:"value"  gencodec:"optional"`
+}
+type DiffUint64 struct {
+	Value *uint64 `json:"value"  gencodec:"optional"`
+}
+type DiffBigInt struct {
+	Value *big.Int `json:"value"  gencodec:"optional"`
+}

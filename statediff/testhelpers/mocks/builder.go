@@ -1,8 +1,8 @@
 package mocks
 
 import (
-	"github.com/ethereum/go-ethereum/statediff/builder"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/statediff/builder"
 )
 
 type Builder struct {
@@ -30,4 +30,3 @@ func (builder *Builder) SetStateDiffToBuild(stateDiff *builder.StateDiff) {
 func (builder *Builder) SetBuilderError(err error) {
 	builder.builderError = err
 }
-
