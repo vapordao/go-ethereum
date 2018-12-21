@@ -61,7 +61,6 @@ func TestBuilder(t *testing.T) {
 		blockHash common.Hash
 	}
 
-
 	var (
 		balanceChange10000 = int64(10000)
 		balanceChange1000 = int64(1000)
