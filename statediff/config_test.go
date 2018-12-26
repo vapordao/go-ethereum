@@ -1,0 +1,23 @@
+package statediff_test
+
+import (
+	"github.com/ethereum/go-ethereum/statediff"
+	"testing"
+	"github.com/ethereum/go-ethereum/statediff/testhelpers"
+)
+
+func TestNewMode(t *testing.T) {
+	mode, err := statediff.NewMode("csv")
+	if err != nil {
+		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+	}
+
+	if mode != statediff.CSV {
+		t.Error()
+	}
+
+	_, err = statediff.NewMode("not a real mode")
+	if err == nil {
+		t.Error("Expected an error, and got nil.")
+	}
+}

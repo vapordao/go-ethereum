@@ -180,7 +180,7 @@ func makeFullNode(ctx *cli.Context) *node.Node {
 	}
 
 	if ctx.GlobalBool(utils.StateDiffFlag.Name) {
-		utils.RegisterStateDiffService(stack)
+		utils.RegisterStateDiffService(stack, ctx)
 	}
 	return stack
 }

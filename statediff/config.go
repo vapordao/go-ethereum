@@ -56,6 +56,12 @@ func (mode StateDiffMode) String() string {
 	}
 }
 
+func NewMode(mode string) (StateDiffMode, error) {
+	stateDiffMode := StateDiffMode(0)
+	err := stateDiffMode.UnmarshalText([]byte(mode))
+	return stateDiffMode, err
+}
+
 func (mode StateDiffMode) MarshalText() ([]byte, error) {
 	switch mode {
 	case CSV:
