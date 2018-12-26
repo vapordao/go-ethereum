@@ -14,6 +14,7 @@ import (
 	"reflect"
 	"strconv"
 	"testing"
+	"strings"
 )
 
 var (
@@ -77,6 +78,7 @@ func TestPublisher(t *testing.T) {
 	type Test func(t *testing.T)
 
 	var tests = []Test{
+		testFileName,
 		testColumnHeaders,
 		testAccountDiffs,
 		testWhenNoDiff,
@@ -108,23 +110,34 @@ func removeFilesFromDir(dir string) error {
 	return nil
 }
 
+func testFileName(t *testing.T) {
+	fileName, err := publisher.PublishStateDiff(&testhelpers.TestStateDiff)
+	if err != nil {
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
+	}
+
+	if !strings.HasPrefix(fileName, dir) {
+		t.Errorf(testhelpers.TestFailureFormatString, t.Name(), dir, fileName)
+	}
+}
+
 func testColumnHeaders(t *testing.T) {
 	_, err = publisher.PublishStateDiff(&testhelpers.TestStateDiff)
 	if err != nil {
-		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 
 	file, err := getTestDiffFile(dir)
 	if err != nil {
-		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 
 	lines, err := csv.NewReader(file).ReadAll()
 	if err != nil {
-		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 	if len(lines) < 1 {
-		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 	if !equals(lines[0], p.Headers) {
 		t.Error()
@@ -135,29 +148,29 @@ func testAccountDiffs(t *testing.T) {
 	// it persists the created, updated and deleted account diffs to a CSV file
 	_, err = publisher.PublishStateDiff(&testhelpers.TestStateDiff)
 	if err != nil {
-		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 
 	file, err := getTestDiffFile(dir)
 	if err != nil {
-		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 
 	lines, err := csv.NewReader(file).ReadAll()
 	if err != nil {
-		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 	if len(lines) <= 3 {
-		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 	if !equals(lines[1], expectedCreatedAccountRow) {
-		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 	if !equals(lines[2], expectedUpdatedAccountRow) {
-		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 	if !equals(lines[3], expectedDeletedAccountRow) {
-		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 }
 
@@ -166,21 +179,21 @@ func testWhenNoDiff(t *testing.T) {
 	emptyDiff := builder.StateDiff{}
 	_, err = publisher.PublishStateDiff(&emptyDiff)
 	if err != nil {
-		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 
 	file, err := getTestDiffFile(dir)
 	if err != nil {
-		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 
 	lines, err := csv.NewReader(file).ReadAll()
 	if err != nil {
-		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 
 	if !equals(len(lines), 1) {
-		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 }
 
@@ -189,28 +202,28 @@ func testDefaultPublisher(t *testing.T) {
 	config := statediff.Config{Path: dir}
 	publisher, err = p.NewPublisher(config)
 	if err != nil {
-		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 
 	_, err = publisher.PublishStateDiff(&testhelpers.TestStateDiff)
 	if err != nil {
-		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 
 	file, err := getTestDiffFile(dir)
 	if err != nil {
-		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 
 	lines, err := csv.NewReader(file).ReadAll()
 	if err != nil {
-		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 	if !equals(len(lines), 4) {
-		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 	if !equals(lines[0], p.Headers) {
-		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 }
 
@@ -219,33 +232,33 @@ func testDefaultDirectory(t *testing.T) {
 	config := statediff.Config{}
 	publisher, err = p.NewPublisher(config)
 	if err != nil {
-		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 
 	err := os.Chdir(dir)
 	if err != nil {
-		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 
 	_, err = publisher.PublishStateDiff(&testhelpers.TestStateDiff)
 	if err != nil {
-		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 
 	file, err := getTestDiffFile(dir)
 	if err != nil {
-		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 
 	lines, err := csv.NewReader(file).ReadAll()
 	if err != nil {
-		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 	if !equals(len(lines), 4) {
-		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 	if !equals(lines[0], p.Headers) {
-		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 }
 

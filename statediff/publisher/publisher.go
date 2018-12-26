@@ -41,8 +41,8 @@ func NewPublisher(config statediff.Config) (*publisher, error) {
 func (p *publisher) PublishStateDiff(sd *builder.StateDiff) (string, error) {
 	switch p.Config.Mode {
 	case statediff.CSV:
-		return "", p.publishStateDiffToCSV(*sd)
+		return p.publishStateDiffToCSV(*sd)
 	default:
-		return "", p.publishStateDiffToCSV(*sd)
+		return p.publishStateDiffToCSV(*sd)
 	}
 }

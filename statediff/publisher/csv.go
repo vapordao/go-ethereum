@@ -31,12 +31,12 @@ func createCSVFilePath(path string) string {
 	return filePath
 }
 
-func (p *publisher) publishStateDiffToCSV(sd builder.StateDiff) error {
+func (p *publisher) publishStateDiffToCSV(sd builder.StateDiff) (string, error) {
 	filePath := createCSVFilePath(p.Config.Path)
 
 	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer file.Close()
 
@@ -58,11 +58,11 @@ func (p *publisher) publishStateDiffToCSV(sd builder.StateDiff) error {
 	for _, value := range data {
 		err := writer.Write(value)
 		if err != nil {
-			return err
+			return "", err
 		}
 	}
 
-	return nil
+	return filePath, nil
 }
 
 func accumulateUpdatedAccountRows(sd builder.StateDiff) [][]string {

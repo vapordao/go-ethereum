@@ -9,7 +9,7 @@ import (
 func TestNewMode(t *testing.T) {
 	mode, err := statediff.NewMode("csv")
 	if err != nil {
-		t.Errorf(testhelpers.TestFailedFormatString, t.Name(), err)
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 
 	if mode != statediff.CSV {
