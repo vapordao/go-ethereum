@@ -158,30 +158,16 @@ func (sdb *builder) buildDiffEventual(accounts map[common.Address]*state.Account
 		codeBytes, err := sdb.chainDB.Get(val.CodeHash)
 		codeHash := hexutil.Encode(val.CodeHash)
 		hexRoot := val.Root.Hex()
-
-		if created {
-			nonce := DiffUint64{Value: &val.Nonce}
-			balance := DiffBigInt{Value: val.Balance}
-			contractRoot := DiffString{Value: &hexRoot}
-			accountDiffs[addr] = AccountDiffEventual{
-				Nonce:        nonce,
-				Balance:      balance,
-				CodeHash:     codeHash,
-				Code:         codeBytes,
-				ContractRoot: contractRoot,
-				Storage:      storageDiffs,
-			}
-		} else {
-			nonce := DiffUint64{Value: &val.Nonce}
-			balance := DiffBigInt{Value: val.Balance}
-			contractRoot := DiffString{Value: &hexRoot}
-			accountDiffs[addr] = AccountDiffEventual{
-				Nonce:        nonce,
-				Balance:      balance,
-				CodeHash:     codeHash,
-				ContractRoot: contractRoot,
-				Storage:      storageDiffs,
-			}
+		nonce := DiffUint64{Value: &val.Nonce}
+		balance := DiffBigInt{Value: val.Balance}
+		contractRoot := DiffString{Value: &hexRoot}
+		accountDiffs[addr] = AccountDiffEventual{
+			Nonce:        nonce,
+			Balance:      balance,
+			CodeHash:     codeHash,
+			Code:         codeBytes,
+			ContractRoot: contractRoot,
+			Storage:      storageDiffs,
 		}
 	}
 
