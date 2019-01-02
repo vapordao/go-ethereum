@@ -50,12 +50,12 @@ func (sdb *builder) BuildStateDiff(oldStateRoot, newStateRoot common.Hash, block
 	// Generate tries for old and new states
 	oldTrie, err := trie.New(oldStateRoot, sdb.trieDB)
 	if err != nil {
-		log.Debug("error creating oldTrie", err)
+		log.Error("Error creating trie for oldStateRoot", "error", err)
 		return nil, err
 	}
 	newTrie, err := trie.New(newStateRoot, sdb.trieDB)
 	if err != nil {
-		log.Debug("error creating newTrie", err)
+		log.Error("Error creating trie for newStateRoot", "error", err)
 		return nil, err
 	}
 
@@ -64,7 +64,7 @@ func (sdb *builder) BuildStateDiff(oldStateRoot, newStateRoot common.Hash, block
 	newIt := newTrie.NodeIterator([]byte{})
 	creations, err := sdb.collectDiffNodes(oldIt, newIt)
 	if err != nil {
-		log.Debug("error collecting creation diff nodes", err)
+		log.Error("Error collecting creation diff nodes", "error", err)
 		return nil, err
 	}
 
@@ -73,7 +73,7 @@ func (sdb *builder) BuildStateDiff(oldStateRoot, newStateRoot common.Hash, block
 	newIt = newTrie.NodeIterator(make([]byte, 0))
 	deletions, err := sdb.collectDiffNodes(newIt, oldIt)
 	if err != nil {
-		log.Debug("error collecting deletion diff nodes", err)
+		log.Error("Error collecting deletion diff nodes", "error", err)
 		return nil, err
 	}
 
@@ -85,17 +85,17 @@ func (sdb *builder) BuildStateDiff(oldStateRoot, newStateRoot common.Hash, block
 	// Build and return the statediff
 	updatedAccounts, err := sdb.buildDiffIncremental(creations, deletions, updatedKeys)
 	if err != nil {
-		log.Debug("error building diff incremental for updated", err)
+		log.Error("Error building diff for updated accounts", "error", err)
 		return nil, err
 	}
 	createdAccounts, err := sdb.buildDiffEventual(creations, true)
 	if err != nil {
-		log.Debug("error building diff incremental for created", err)
+		log.Error("Error building diff for created accounts", "error", err)
 		return nil, err
 	}
 	deletedAccounts, err := sdb.buildDiffEventual(deletions, false)
 	if err != nil {
-		log.Debug("error building diff incremental for deleted", err)
+		log.Error("Error building diff for deleted accounts", "error", err)
 		return nil, err
 	}
 
@@ -260,9 +260,7 @@ func (sdb *builder) buildStorageDiffsIncremental(oldSR common.Hash, newSR common
 }
 
 func (sdb *builder) addressByPath(path []byte) (*common.Address, error) {
-	// db := core.PreimageTable(sdb.chainDb)
 	log.Debug("Looking up address from path", "path", hexutil.Encode(append([]byte("secure-key-"), path...)))
-	// if addrBytes,err := db.Get(path); err != nil {
 	if addrBytes, err := sdb.chainDB.Get(append([]byte("secure-key-"), hexToKeybytes(path)...)); err != nil {
 		log.Error("Error looking up address via path", "path", hexutil.Encode(append([]byte("secure-key-"), path...)), "error", err)
 		return nil, err

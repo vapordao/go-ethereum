@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 type BlockChain interface {
@@ -51,19 +52,30 @@ func (StateDiffService) APIs() []rpc.API {
 func (sds *StateDiffService) Loop(events chan core.ChainEvent) {
 	for elem := range events {
 		currentBlock := elem.Block
-
 		parentHash := currentBlock.ParentHash()
 		parentBlock := sds.BlockChain.GetBlockByHash(parentHash)
 
-		sds.Extractor.ExtractStateDiff(*parentBlock, *currentBlock)
+		stateDiffLocation, err := sds.Extractor.ExtractStateDiff(*parentBlock, *currentBlock)
+		if err != nil {
+			log.Error("Error extracting statediff", "block number", currentBlock.Number(), "error", err)
+		} else {
+			log.Info("Statediff extracted", "block number", currentBlock.Number(), "location", stateDiffLocation)
+		}
 	}
 }
 
+var eventsChannel chan core.ChainEvent
 func (sds *StateDiffService) Start(server *p2p.Server) error {
-	events := make(chan core.ChainEvent, 10)
-	sds.BlockChain.SubscribeChainEvent(events)
-	go sds.Loop(events)
+	log.Info("Starting statediff service")
+	eventsChannel := make(chan core.ChainEvent, 10)
+	sds.BlockChain.SubscribeChainEvent(eventsChannel)
+	go sds.Loop(eventsChannel)
 	return nil
 }
 
-func (StateDiffService) Stop() error { return nil }
+func (StateDiffService) Stop() error {
+	log.Info("Stopping statediff service")
+	close(eventsChannel)
+
+	return nil
+}
