@@ -113,7 +113,6 @@ func TestBuilder(t *testing.T) {
 					account1Addr: {
 						Nonce:        b.DiffUint64{Value: &nonce0},
 						Balance:      b.DiffBigInt{Value: big.NewInt(balanceChange10000)},
-						Code:         nil,
 						CodeHash:     "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
 						ContractRoot: b.DiffString{Value: &originalContractRoot},
 						Storage:      map[string]b.DiffString{},
@@ -121,7 +120,6 @@ func TestBuilder(t *testing.T) {
 					burnAddress: {
 						Nonce:        b.DiffUint64{Value: &nonce0},
 						Balance:      b.DiffBigInt{Value: big.NewInt(miningReward)},
-						Code:         nil,
 						CodeHash:     "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
 						ContractRoot: b.DiffString{Value: &originalContractRoot},
 						Storage:      map[string]b.DiffString{},
@@ -156,7 +154,6 @@ func TestBuilder(t *testing.T) {
 					account2Addr: {
 						Nonce:        b.DiffUint64{Value: &nonce0},
 						Balance:      b.DiffBigInt{Value: big.NewInt(balanceChange1000)},
-						Code:         nil,
 						CodeHash:     "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
 						ContractRoot: b.DiffString{Value: &originalContractRoot},
 						Storage:      map[string]b.DiffString{},
@@ -164,7 +161,6 @@ func TestBuilder(t *testing.T) {
 					contractAddr: {
 						Nonce:        b.DiffUint64{Value: &nonce1},
 						Balance:      b.DiffBigInt{Value: big.NewInt(0)},
-						Code:         []byte{96, 96, 96, 64, 82, 96, 0, 53, 124, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 144, 4, 128, 99, 96, 205, 38, 133, 20, 96, 65, 87, 128, 99, 193, 100, 49, 185, 20, 96, 107, 87, 96, 63, 86, 91, 0, 91, 96, 85, 96, 4, 128, 128, 53, 144, 96, 32, 1, 144, 145, 144, 80, 80, 96, 169, 86, 91, 96, 64, 81, 128, 130, 129, 82, 96, 32, 1, 145, 80, 80, 96, 64, 81, 128, 145, 3, 144, 243, 91, 96, 136, 96, 4, 128, 128, 53, 144, 96, 32, 1, 144, 145, 144, 128, 53, 144, 96, 32, 1, 144, 145, 144, 80, 80, 96, 138, 86, 91, 0, 91, 128, 96, 0, 96, 0, 80, 131, 96, 100, 129, 16, 21, 96, 2, 87, 144, 144, 1, 96, 0, 91, 80, 129, 144, 85, 80, 91, 80, 80, 86, 91, 96, 0, 96, 0, 96, 0, 80, 130, 96, 100, 129, 16, 21, 96, 2, 87, 144, 144, 1, 96, 0, 91, 80, 84, 144, 80, 96, 199, 86, 91, 145, 144, 80, 86},
 						CodeHash:     "0x1c671ee4ae8abbacab7da59d6f8785cce8295eb086551ce7ac266a2e93666c0f",
 						ContractRoot: b.DiffString{Value: &originalContractRoot},
 						Storage:      map[string]b.DiffString{},

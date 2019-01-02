@@ -25,7 +25,6 @@ var (
 		Nonce:        builder.DiffUint64{Value: &NewNonceValue},
 		Balance:      builder.DiffBigInt{Value: big.NewInt(NewBalanceValue)},
 		ContractRoot: builder.DiffString{Value: &ContractRoot},
-		Code:         []byte("created account code"),
 		CodeHash:     CodeHash,
 		Storage:      storage,
 	}}
@@ -42,7 +41,6 @@ var (
 		Nonce:        builder.DiffUint64{Value: &NewNonceValue},
 		Balance:      builder.DiffBigInt{Value: big.NewInt(NewBalanceValue)},
 		ContractRoot: builder.DiffString{Value: &ContractRoot},
-		Code:         []byte("deleted account code"),
 		CodeHash:     CodeHash,
 		Storage:      storage,
 	}}

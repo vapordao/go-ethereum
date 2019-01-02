@@ -12,9 +12,8 @@ import (
 
 var (
 	Headers = []string{
-		"blockNumber", "blockHash", "accountAction",
-		"code", "codeHash", "nonceValue",
-		"balanceValue", "contractRoot", "storageDiffPaths",
+		"blockNumber", "blockHash", "accountAction", "codeHash",
+		"nonceValue", "balanceValue", "contractRoot", "storageDiffPaths",
 	}
 
 	timeStampFormat      = "20060102150405.00000"
@@ -108,7 +107,6 @@ func formatAccountDiffEventual(accountDiff builder.AccountDiffEventual, sd build
 		strconv.FormatInt(sd.BlockNumber, 10),
 		sd.BlockHash.String(),
 		accountAction,
-		string(accountDiff.Code),
 		accountDiff.CodeHash,
 		strconv.FormatUint(*accountDiff.Nonce.Value, 10),
 		accountDiff.Balance.Value.String(),
@@ -128,7 +126,6 @@ func formatAccountDiffIncremental(accountDiff builder.AccountDiffIncremental, sd
 		strconv.FormatInt(sd.BlockNumber, 10),
 		sd.BlockHash.String(),
 		accountAction,
-		"",
 		accountDiff.CodeHash,
 		strconv.FormatUint(*accountDiff.Nonce.Value, 10),
 		accountDiff.Balance.Value.String(),
