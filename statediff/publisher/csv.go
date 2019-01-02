@@ -22,16 +22,17 @@ var (
 	updatedAccountAction = "updated"
 )
 
-func createCSVFilePath(path string) string {
+func createCSVFilePath(path, blockNumber string) string {
 	now := time.Now()
 	timeStamp := now.Format(timeStampFormat)
-	filePath := filepath.Join(path, timeStamp)
+	suffix := timeStamp + "-" + blockNumber
+	filePath := filepath.Join(path, suffix)
 	filePath = filePath + ".csv"
 	return filePath
 }
 
 func (p *publisher) publishStateDiffToCSV(sd builder.StateDiff) (string, error) {
-	filePath := createCSVFilePath(p.Config.Path)
+	filePath := createCSVFilePath(p.Config.Path, strconv.FormatInt(sd.BlockNumber, 10))
 
 	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {

@@ -116,6 +116,10 @@ func testFileName(t *testing.T) {
 	if !strings.HasPrefix(fileName, dir) {
 		t.Errorf(testhelpers.TestFailureFormatString, t.Name(), dir, fileName)
 	}
+	blockNumberWithFileExt := strconv.FormatInt(testhelpers.BlockNumber, 10) + ".csv"
+	if !strings.HasSuffix(fileName, blockNumberWithFileExt) {
+		t.Errorf(testhelpers.TestFailureFormatString, t.Name(), blockNumberWithFileExt, fileName)
+	}
 }
 
 func testColumnHeaders(t *testing.T) {
