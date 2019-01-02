@@ -97,7 +97,7 @@ func accumulateCreatedAccountRows(sd builder.StateDiff) [][]string {
 	return createdAccountRows
 }
 
-func formatAccountDiffEventual(accountDiff builder.AccountDiffEventual, sd builder.StateDiff, accountAction string) []string {
+func formatAccountDiffEventual(accountDiff builder.AccountDiff, sd builder.StateDiff, accountAction string) []string {
 	newContractRoot := accountDiff.ContractRoot.Value
 	var storageDiffPaths []string
 	for k := range accountDiff.Storage {
@@ -116,7 +116,7 @@ func formatAccountDiffEventual(accountDiff builder.AccountDiffEventual, sd build
 	return formattedAccountData
 }
 
-func formatAccountDiffIncremental(accountDiff builder.AccountDiffIncremental, sd builder.StateDiff, accountAction string) []string {
+func formatAccountDiffIncremental(accountDiff builder.AccountDiff, sd builder.StateDiff, accountAction string) []string {
 	newContractRoot := accountDiff.ContractRoot.Value
 	var storageDiffPaths []string
 	for k := range accountDiff.Storage {

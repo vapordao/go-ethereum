@@ -145,8 +145,8 @@ func (sdb *builder) collectDiffNodes(a, b trie.NodeIterator) (map[common.Address
 	return diffAccounts, nil
 }
 
-func (sdb *builder) buildDiffEventual(accounts map[common.Address]*state.Account, created bool) (map[common.Address]AccountDiffEventual, error) {
-	accountDiffs := make(map[common.Address]AccountDiffEventual)
+func (sdb *builder) buildDiffEventual(accounts map[common.Address]*state.Account, created bool) (map[common.Address]AccountDiff, error) {
+	accountDiffs := make(map[common.Address]AccountDiff)
 	for addr, val := range accounts {
 		sr := val.Root
 		storageDiffs, err := sdb.buildStorageDiffsEventual(sr, created)
@@ -160,7 +160,7 @@ func (sdb *builder) buildDiffEventual(accounts map[common.Address]*state.Account
 		nonce := DiffUint64{Value: &val.Nonce}
 		balance := DiffBigInt{Value: val.Balance}
 		contractRoot := DiffString{Value: &hexRoot}
-		accountDiffs[addr] = AccountDiffEventual{
+		accountDiffs[addr] = AccountDiff{
 			Nonce:        nonce,
 			Balance:      balance,
 			CodeHash:     codeHash,
@@ -172,8 +172,8 @@ func (sdb *builder) buildDiffEventual(accounts map[common.Address]*state.Account
 	return accountDiffs, nil
 }
 
-func (sdb *builder) buildDiffIncremental(creations map[common.Address]*state.Account, deletions map[common.Address]*state.Account, updatedKeys []string) (map[common.Address]AccountDiffIncremental, error) {
-	updatedAccounts := make(map[common.Address]AccountDiffIncremental)
+func (sdb *builder) buildDiffIncremental(creations map[common.Address]*state.Account, deletions map[common.Address]*state.Account, updatedKeys []string) (map[common.Address]AccountDiff, error) {
+	updatedAccounts := make(map[common.Address]AccountDiff)
 	for _, val := range updatedKeys {
 		createdAcc := creations[common.HexToAddress(val)]
 		deletedAcc := deletions[common.HexToAddress(val)]
@@ -190,7 +190,7 @@ func (sdb *builder) buildDiffIncremental(creations map[common.Address]*state.Acc
 			nHexRoot := createdAcc.Root.Hex()
 			contractRoot := DiffString{Value: &nHexRoot}
 
-			updatedAccounts[common.HexToAddress(val)] = AccountDiffIncremental{
+			updatedAccounts[common.HexToAddress(val)] = AccountDiff{
 				Nonce:        nonce,
 				Balance:      balance,
 				CodeHash:     codeHash,

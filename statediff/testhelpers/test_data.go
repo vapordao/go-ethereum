@@ -21,7 +21,7 @@ var (
 	newStorage          = "0x03"
 	storage             = map[string]builder.DiffString{StoragePath: {Value: &newStorage}}
 	address             = common.HexToAddress("0xaE9BEa628c4Ce503DcFD7E305CaB4e29E7476592")
-	CreatedAccountDiffs = map[common.Address]builder.AccountDiffEventual{address: {
+	CreatedAccountDiffs = map[common.Address]builder.AccountDiff{address: {
 		Nonce:        builder.DiffUint64{Value: &NewNonceValue},
 		Balance:      builder.DiffBigInt{Value: big.NewInt(NewBalanceValue)},
 		ContractRoot: builder.DiffString{Value: &ContractRoot},
@@ -29,7 +29,7 @@ var (
 		Storage:      storage,
 	}}
 
-	UpdatedAccountDiffs = map[common.Address]builder.AccountDiffIncremental{address: {
+	UpdatedAccountDiffs = map[common.Address]builder.AccountDiff{address: {
 		Nonce:        builder.DiffUint64{Value: &NewNonceValue},
 		Balance:      builder.DiffBigInt{Value: big.NewInt(NewBalanceValue)},
 		CodeHash:     CodeHash,
@@ -37,7 +37,7 @@ var (
 		Storage:      storage,
 	}}
 
-	DeletedAccountDiffs = map[common.Address]builder.AccountDiffEventual{address: {
+	DeletedAccountDiffs = map[common.Address]builder.AccountDiff{address: {
 		Nonce:        builder.DiffUint64{Value: &NewNonceValue},
 		Balance:      builder.DiffBigInt{Value: big.NewInt(NewBalanceValue)},
 		ContractRoot: builder.DiffString{Value: &ContractRoot},

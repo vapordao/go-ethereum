@@ -31,8 +31,8 @@ var (
 	contractCode = common.Hex2Bytes("606060405260cc8060106000396000f360606040526000357c01000000000000000000000000000000000000000000000000000000009004806360cd2685146041578063c16431b914606b57603f565b005b6055600480803590602001909190505060a9565b6040518082815260200191505060405180910390f35b60886004808035906020019091908035906020019091905050608a565b005b80600060005083606481101560025790900160005b50819055505b5050565b6000600060005082606481101560025790900160005b5054905060c7565b91905056")
 	contractAddr common.Address
 
-	emptyAccountDiffEventualMap    = make(map[common.Address]b.AccountDiffEventual)
-	emptyAccountDiffIncrementalMap = make(map[common.Address]b.AccountDiffIncremental)
+	emptyAccountDiffEventualMap    = make(map[common.Address]b.AccountDiff)
+	emptyAccountDiffIncrementalMap = make(map[common.Address]b.AccountDiff)
 
 	block0Hash, block1Hash, block2Hash, block3Hash common.Hash
 	block0, block1, block2, block3                 *types.Block
@@ -109,7 +109,7 @@ func TestBuilder(t *testing.T) {
 			&b.StateDiff{
 				BlockNumber: block1.Number().Int64(),
 				BlockHash:   block1.Hash(),
-				CreatedAccounts: map[common.Address]b.AccountDiffEventual{
+				CreatedAccounts: map[common.Address]b.AccountDiff{
 					account1Addr: {
 						Nonce:        b.DiffUint64{Value: &nonce0},
 						Balance:      b.DiffBigInt{Value: big.NewInt(balanceChange10000)},
@@ -126,7 +126,7 @@ func TestBuilder(t *testing.T) {
 					},
 				},
 				DeletedAccounts: emptyAccountDiffEventualMap,
-				UpdatedAccounts: map[common.Address]b.AccountDiffIncremental{
+				UpdatedAccounts: map[common.Address]b.AccountDiff{
 					testBankAddress: {
 						Nonce:        b.DiffUint64{Value: &nonce1},
 						Balance:      b.DiffBigInt{Value: big.NewInt(testBankFunds.Int64() - balanceChange10000)},
@@ -150,7 +150,7 @@ func TestBuilder(t *testing.T) {
 			&b.StateDiff{
 				BlockNumber: block2.Number().Int64(),
 				BlockHash:   block2.Hash(),
-				CreatedAccounts: map[common.Address]b.AccountDiffEventual{
+				CreatedAccounts: map[common.Address]b.AccountDiff{
 					account2Addr: {
 						Nonce:        b.DiffUint64{Value: &nonce0},
 						Balance:      b.DiffBigInt{Value: big.NewInt(balanceChange1000)},
@@ -167,7 +167,7 @@ func TestBuilder(t *testing.T) {
 					},
 				},
 				DeletedAccounts: emptyAccountDiffEventualMap,
-				UpdatedAccounts: map[common.Address]b.AccountDiffIncremental{
+				UpdatedAccounts: map[common.Address]b.AccountDiff{
 					testBankAddress: {
 						Nonce:        b.DiffUint64{Value: &nonce2},
 						Balance:      b.DiffBigInt{Value: big.NewInt(block1BankBalance - balanceChange1000)},
@@ -205,9 +205,9 @@ func TestBuilder(t *testing.T) {
 			&b.StateDiff{
 				BlockNumber:     block3.Number().Int64(),
 				BlockHash:       block3.Hash(),
-				CreatedAccounts: map[common.Address]b.AccountDiffEventual{},
+				CreatedAccounts: map[common.Address]b.AccountDiff{},
 				DeletedAccounts: emptyAccountDiffEventualMap,
-				UpdatedAccounts: map[common.Address]b.AccountDiffIncremental{
+				UpdatedAccounts: map[common.Address]b.AccountDiff{
 					account2Addr: {
 						Nonce:        b.DiffUint64{Value: &nonce0},
 						Balance:      b.DiffBigInt{Value: big.NewInt(block2Account2Balance + miningReward)},

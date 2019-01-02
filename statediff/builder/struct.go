@@ -27,11 +27,11 @@ import (
 )
 
 type StateDiff struct {
-	BlockNumber     int64                                     `json:"blockNumber"      gencodec:"required"`
-	BlockHash       common.Hash                               `json:"blockHash"        gencodec:"required"`
-	CreatedAccounts map[common.Address]AccountDiffEventual    `json:"createdAccounts"  gencodec:"required"`
-	DeletedAccounts map[common.Address]AccountDiffEventual    `json:"deletedAccounts"  gencodec:"required"`
-	UpdatedAccounts map[common.Address]AccountDiffIncremental `json:"updatedAccounts"  gencodec:"required"`
+	BlockNumber     int64                          `json:"blockNumber"      gencodec:"required"`
+	BlockHash       common.Hash                    `json:"blockHash"        gencodec:"required"`
+	CreatedAccounts map[common.Address]AccountDiff `json:"createdAccounts"  gencodec:"required"`
+	DeletedAccounts map[common.Address]AccountDiff `json:"deletedAccounts"  gencodec:"required"`
+	UpdatedAccounts map[common.Address]AccountDiff `json:"updatedAccounts"  gencodec:"required"`
 
 	encoded []byte
 	err     error
@@ -55,15 +55,7 @@ func (sd *StateDiff) Encode() ([]byte, error) {
 	return sd.encoded, sd.err
 }
 
-type AccountDiffEventual struct {
-	Nonce        DiffUint64            `json:"nonce"         gencodec:"required"`
-	Balance      DiffBigInt            `json:"balance"       gencodec:"required"`
-	CodeHash     string                `json:"codeHash"      gencodec:"required"`
-	ContractRoot DiffString            `json:"contractRoot"  gencodec:"required"`
-	Storage      map[string]DiffString `json:"storage"       gencodec:"required"`
-}
-
-type AccountDiffIncremental struct {
+type AccountDiff struct {
 	Nonce        DiffUint64            `json:"nonce"         gencodec:"required"`
 	Balance      DiffBigInt            `json:"balance"       gencodec:"required"`
 	CodeHash     string                `json:"codeHash"      gencodec:"required"`
