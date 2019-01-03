@@ -151,7 +151,7 @@ func (sdb *builder) buildDiffEventual(accounts map[common.Address]*state.Account
 		sr := val.Root
 		storageDiffs, err := sdb.buildStorageDiffsEventual(sr, created)
 		if err != nil {
-			log.Error("Failed building eventual storage diffs", "Address", val, "error", err)
+			log.Error("Failed building eventual storage diffs", "Address", addr, "error", err)
 			return nil, err
 		}
 

@@ -631,7 +631,7 @@ var (
 
 	StateDiffFlag = cli.BoolFlag{
 		Name: "statediff",
-		Usage: "Enables the calculation of state diffs between each block, persists these state diffs the configured persistance mode.",
+		Usage: "Enables the calculation of state diffs between each block, persists these state diffs the configured persistence mode.",
 	}
 
 	StateDiffModeFlag = cli.StringFlag{

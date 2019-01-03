@@ -13,16 +13,16 @@ import (
 	"path/filepath"
 	"reflect"
 	"strconv"
-	"testing"
 	"strings"
+	"testing"
 )
 
 var (
-	tempDir                = os.TempDir()
-	testFilePrefix         = "test-statediff"
-	publisher              p.Publisher
-	dir                    string
-	err                    error
+	tempDir        = os.TempDir()
+	testFilePrefix = "test-statediff"
+	publisher      p.Publisher
+	dir            string
+	err            error
 )
 
 var expectedCreatedAccountRow = []string{

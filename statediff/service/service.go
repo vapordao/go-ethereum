@@ -65,6 +65,7 @@ func (sds *StateDiffService) Loop(events chan core.ChainEvent) {
 }
 
 var eventsChannel chan core.ChainEvent
+
 func (sds *StateDiffService) Start(server *p2p.Server) error {
 	log.Info("Starting statediff service")
 	eventsChannel := make(chan core.ChainEvent, 10)
