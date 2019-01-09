@@ -69,8 +69,8 @@ func (sdb *builder) BuildStateDiff(oldStateRoot, newStateRoot common.Hash, block
 	}
 
 	// Find deleted accounts
-	oldIt = oldTrie.NodeIterator(make([]byte, 0))
-	newIt = newTrie.NodeIterator(make([]byte, 0))
+	oldIt = oldTrie.NodeIterator([]byte{})
+	newIt = newTrie.NodeIterator([]byte{})
 	deletions, err := sdb.collectDiffNodes(newIt, oldIt)
 	if err != nil {
 		log.Error("Error collecting deletion diff nodes", "error", err)
@@ -88,12 +88,12 @@ func (sdb *builder) BuildStateDiff(oldStateRoot, newStateRoot common.Hash, block
 		log.Error("Error building diff for updated accounts", "error", err)
 		return nil, err
 	}
-	createdAccounts, err := sdb.buildDiffEventual(creations, true)
+	createdAccounts, err := sdb.buildDiffEventual(creations)
 	if err != nil {
 		log.Error("Error building diff for created accounts", "error", err)
 		return nil, err
 	}
-	deletedAccounts, err := sdb.buildDiffEventual(deletions, false)
+	deletedAccounts, err := sdb.buildDiffEventual(deletions)
 	if err != nil {
 		log.Error("Error building diff for deleted accounts", "error", err)
 		return nil, err
@@ -145,11 +145,11 @@ func (sdb *builder) collectDiffNodes(a, b trie.NodeIterator) (map[common.Address
 	return diffAccounts, nil
 }
 
-func (sdb *builder) buildDiffEventual(accounts map[common.Address]*state.Account, created bool) (map[common.Address]AccountDiff, error) {
+func (sdb *builder) buildDiffEventual(accounts map[common.Address]*state.Account) (map[common.Address]AccountDiff, error) {
 	accountDiffs := make(map[common.Address]AccountDiff)
 	for addr, val := range accounts {
 		sr := val.Root
-		storageDiffs, err := sdb.buildStorageDiffsEventual(sr, created)
+		storageDiffs, err := sdb.buildStorageDiffsEventual(sr)
 		if err != nil {
 			log.Error("Failed building eventual storage diffs", "Address", addr, "error", err)
 			return nil, err
@@ -204,10 +204,11 @@ func (sdb *builder) buildDiffIncremental(creations map[common.Address]*state.Acc
 	return updatedAccounts, nil
 }
 
-func (sdb *builder) buildStorageDiffsEventual(sr common.Hash, creation bool) (map[string]DiffString, error) {
+func (sdb *builder) buildStorageDiffsEventual(sr common.Hash) (map[string]DiffString, error) {
 	log.Debug("Storage Root For Eventual Diff", "root", sr.Hex())
 	sTrie, err := trie.New(sr, sdb.trieDB)
 	if err != nil {
+		log.Info("error in build storage diff eventual", "error", err)
 		return nil, err
 	}
 	it := sTrie.NodeIterator(make([]byte, 0))
@@ -261,7 +262,7 @@ func (sdb *builder) buildStorageDiffsIncremental(oldSR common.Hash, newSR common
 
 func (sdb *builder) addressByPath(path []byte) (*common.Address, error) {
 	log.Debug("Looking up address from path", "path", hexutil.Encode(append([]byte("secure-key-"), path...)))
-	if addrBytes, err := sdb.chainDB.Get(append([]byte("secure-key-"), hexToKeybytes(path)...)); err != nil {
+	if addrBytes, err := sdb.chainDB.Get(append([]byte("secure-key-"), hexToKeyBytes(path)...)); err != nil {
 		log.Error("Error looking up address via path", "path", hexutil.Encode(append([]byte("secure-key-"), path...)), "error", err)
 		return nil, err
 	} else {

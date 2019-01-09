@@ -1353,7 +1353,6 @@ func RegisterStateDiffService(stack *node.Node, ctx *cli.Context) {
 	path := ctx.GlobalString(StateDiffPathFlag.Name)
 
 	config := statediff.Config{
-		On:   false,
 		Mode: mode,
 		Path: path,
 	}

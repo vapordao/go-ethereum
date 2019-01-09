@@ -22,7 +22,6 @@ package statediff
 import "fmt"
 
 type Config struct {
-	On   bool          // Whether or not to extract state diffs
 	Mode StateDiffMode // Mode for storing diffs
 	Path string        // Path for storing diffs
 }

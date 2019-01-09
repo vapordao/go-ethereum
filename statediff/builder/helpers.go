@@ -93,7 +93,7 @@ func pathToStr(it trie.NodeIterator) string {
 }
 
 // Duplicated from trie/encoding.go
-func hexToKeybytes(hex []byte) []byte {
+func hexToKeyBytes(hex []byte) []byte {
 	if hasTerm(hex) {
 		hex = hex[:len(hex)-1]
 	}
