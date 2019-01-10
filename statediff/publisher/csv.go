@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -47,13 +46,13 @@ func (p *publisher) publishStateDiffToCSV(sd builder.StateDiff) (string, error) 
 
 	var data [][]string
 	data = append(data, Headers)
-	for _, row := range accumulateCreatedAccountRows(sd) {
+	for _, row := range accumulateAccountRows(sd, createdAccountAction) {
 		data = append(data, row)
 	}
-	for _, row := range accumulateUpdatedAccountRows(sd) {
+	for _, row := range accumulateAccountRows(sd, updatedAccountAction) {
 		data = append(data, row)
 	}
-	for _, row := range accumulateDeletedAccountRows(sd) {
+	for _, row := range accumulateAccountRows(sd, deletedAccountAction) {
 		data = append(data, row)
 	}
 
@@ -67,81 +66,45 @@ func (p *publisher) publishStateDiffToCSV(sd builder.StateDiff) (string, error) 
 	return filePath, nil
 }
 
-func accumulateUpdatedAccountRows(sd builder.StateDiff) [][]string {
-	var updatedAccountRows [][]string
+func accumulateAccountRows(sd builder.StateDiff, accountAction string) [][]string {
+	var accountRows [][]string
 	for accountAddr, accountDiff := range sd.UpdatedAccounts {
-		formattedAccountData := formatAccountDiffIncremental(accountAddr, accountDiff, sd, updatedAccountAction)
+		formattedAccountData := formatAccountData(accountAddr, accountDiff, sd, accountAction)
 
-		updatedAccountRows = append(updatedAccountRows, formattedAccountData)
+		for _, accountData := range formattedAccountData {
+			accountRows = append(accountRows, accountData)
+		}
 	}
 
-	return updatedAccountRows
+	return accountRows
 }
 
-func accumulateDeletedAccountRows(sd builder.StateDiff) [][]string {
-	var deletedAccountRows [][]string
-	for accountAddr, accountDiff := range sd.DeletedAccounts {
-		formattedAccountData := formatAccountDiffEventual(accountAddr, accountDiff, sd, deletedAccountAction)
-
-		deletedAccountRows = append(deletedAccountRows, formattedAccountData)
-	}
-
-	return deletedAccountRows
-}
-
-func accumulateCreatedAccountRows(sd builder.StateDiff) [][]string {
-	var createdAccountRows [][]string
-	for accountAddr, accountDiff := range sd.CreatedAccounts {
-		formattedAccountData := formatAccountDiffEventual(accountAddr, accountDiff, sd, createdAccountAction)
-
-		createdAccountRows = append(createdAccountRows, formattedAccountData)
-	}
-
-	return createdAccountRows
-}
-
-func formatAccountDiffEventual(accountAddr common.Address, accountDiff builder.AccountDiff, sd builder.StateDiff, accountAction string) []string {
+func formatAccountData(accountAddr common.Address, accountDiff builder.AccountDiff, sd builder.StateDiff, accountAction string) [][]string {
+	blockNumberString := strconv.FormatInt(sd.BlockNumber, 10)
+	blockHash := sd.BlockHash.String()
+	codeHash := accountDiff.CodeHash
+	nonce := strconv.FormatUint(*accountDiff.Nonce.Value, 10)
+	balance := accountDiff.Balance.Value.String()
 	newContractRoot := accountDiff.ContractRoot.Value
-	var storageDiffPaths []string
-	var storageValue builder.DiffString
-	for k, v := range accountDiff.Storage {
-		storageValue = v
-		storageDiffPaths = append(storageDiffPaths, k)
+	address := accountAddr.String()
+	var result [][]string
+	for storagePath, storageValue := range accountDiff.Storage {
+		formattedAccountData := []string{
+			blockNumberString,
+			blockHash,
+			accountAction,
+			codeHash,
+			nonce,
+			balance,
+			*newContractRoot,
+			storagePath,
+			address,
+			*storageValue.Value,
+		}
+
+		result = append(result, formattedAccountData)
 	}
-	formattedAccountData := []string{
-		strconv.FormatInt(sd.BlockNumber, 10),
-		sd.BlockHash.String(),
-		accountAction,
-		accountDiff.CodeHash,
-		strconv.FormatUint(*accountDiff.Nonce.Value, 10),
-		accountDiff.Balance.Value.String(),
-		*newContractRoot,
-		strings.Join(storageDiffPaths, ","),
-		accountAddr.String(),
-		*storageValue.Value,
-	}
-	return formattedAccountData
+
+	return result
 }
 
-func formatAccountDiffIncremental(accountAddr common.Address, accountDiff builder.AccountDiff, sd builder.StateDiff, accountAction string) []string {
-	newContractRoot := accountDiff.ContractRoot.Value
-	var storageDiffPaths []string
-	var storageValue builder.DiffString
-	for k, v := range accountDiff.Storage {
-		storageDiffPaths = append(storageDiffPaths, k)
-		storageValue = v
-	}
-	formattedAccountData := []string{
-		strconv.FormatInt(sd.BlockNumber, 10),
-		sd.BlockHash.String(),
-		accountAction,
-		accountDiff.CodeHash,
-		strconv.FormatUint(*accountDiff.Nonce.Value, 10),
-		accountDiff.Balance.Value.String(),
-		*newContractRoot,
-		strings.Join(storageDiffPaths, ","),
-		accountAddr.String(),
-		*storageValue.Value,
-	}
-	return formattedAccountData
-}
