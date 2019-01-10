@@ -34,6 +34,8 @@ var expectedCreatedAccountRow = []string{
 	strconv.FormatInt(testhelpers.NewBalanceValue, 10),
 	testhelpers.ContractRoot,
 	testhelpers.StoragePath,
+	testhelpers.ContractAddress,
+	testhelpers.StorageValue,
 }
 
 var expectedUpdatedAccountRow = []string{
@@ -45,6 +47,8 @@ var expectedUpdatedAccountRow = []string{
 	strconv.FormatInt(testhelpers.NewBalanceValue, 10),
 	testhelpers.ContractRoot,
 	testhelpers.StoragePath,
+	testhelpers.ContractAddress,
+	testhelpers.StorageValue,
 }
 
 var expectedDeletedAccountRow = []string{
@@ -56,6 +60,8 @@ var expectedDeletedAccountRow = []string{
 	strconv.FormatInt(testhelpers.NewBalanceValue, 10),
 	testhelpers.ContractRoot,
 	testhelpers.StoragePath,
+	testhelpers.ContractAddress,
+	testhelpers.StorageValue,
 }
 
 func TestPublisher(t *testing.T) {
