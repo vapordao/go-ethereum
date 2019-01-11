@@ -56,13 +56,16 @@ func (sd *StateDiff) Encode() ([]byte, error) {
 }
 
 type AccountDiff struct {
-	Nonce        DiffUint64            `json:"nonce"         gencodec:"required"`
-	Balance      DiffBigInt            `json:"balance"       gencodec:"required"`
-	CodeHash     string                `json:"codeHash"      gencodec:"required"`
-	ContractRoot DiffString            `json:"contractRoot"  gencodec:"required"`
-	Storage      map[string]DiffString `json:"storage"       gencodec:"required"`
+	Nonce        DiffUint64             `json:"nonce"         gencodec:"required"`
+	Balance      DiffBigInt             `json:"balance"       gencodec:"required"`
+	CodeHash     string                 `json:"codeHash"      gencodec:"required"`
+	ContractRoot DiffString             `json:"contractRoot"  gencodec:"required"`
+	Storage      map[string]DiffStorage `json:"storage"       gencodec:"required"`
 }
 
+type DiffStorage struct {
+	Value *string `json:"value"  gencodec:"optional"`
+}
 type DiffString struct {
 	Value *string `json:"value"  gencodec:"optional"`
 }

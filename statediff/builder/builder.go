@@ -204,7 +204,7 @@ func (sdb *builder) buildDiffIncremental(creations map[common.Address]*state.Acc
 	return updatedAccounts, nil
 }
 
-func (sdb *builder) buildStorageDiffsEventual(sr common.Hash) (map[string]DiffString, error) {
+func (sdb *builder) buildStorageDiffsEventual(sr common.Hash) (map[string]DiffStorage, error) {
 	log.Debug("Storage Root For Eventual Diff", "root", sr.Hex())
 	sTrie, err := trie.New(sr, sdb.trieDB)
 	if err != nil {
@@ -212,14 +212,14 @@ func (sdb *builder) buildStorageDiffsEventual(sr common.Hash) (map[string]DiffSt
 		return nil, err
 	}
 	it := sTrie.NodeIterator(make([]byte, 0))
-	storageDiffs := make(map[string]DiffString)
+	storageDiffs := make(map[string]DiffStorage)
 	for {
 		log.Debug("Iterating over state at path ", "path", pathToStr(it))
 		if it.Leaf() {
 			log.Debug("Found leaf in storage", "path", pathToStr(it))
 			path := pathToStr(it)
 			value := hexutil.Encode(it.LeafBlob())
-			storageDiffs[path] = DiffString{Value: &value}
+			storageDiffs[path] = DiffStorage{Value: &value}
 		}
 		cont := it.Next(true)
 		if !cont {
@@ -229,7 +229,7 @@ func (sdb *builder) buildStorageDiffsEventual(sr common.Hash) (map[string]DiffSt
 	return storageDiffs, nil
 }
 
-func (sdb *builder) buildStorageDiffsIncremental(oldSR common.Hash, newSR common.Hash) (map[string]DiffString, error) {
+func (sdb *builder) buildStorageDiffsIncremental(oldSR common.Hash, newSR common.Hash) (map[string]DiffStorage, error) {
 	log.Debug("Storage Roots for Incremental Diff", "old", oldSR.Hex(), "new", newSR.Hex())
 	oldTrie, err := trie.New(oldSR, sdb.trieDB)
 	if err != nil {
@@ -243,13 +243,15 @@ func (sdb *builder) buildStorageDiffsIncremental(oldSR common.Hash, newSR common
 	oldIt := oldTrie.NodeIterator(make([]byte, 0))
 	newIt := newTrie.NodeIterator(make([]byte, 0))
 	it, _ := trie.NewDifferenceIterator(oldIt, newIt)
-	storageDiffs := make(map[string]DiffString)
+	storageDiffs := make(map[string]DiffStorage)
 	for {
 		if it.Leaf() {
 			log.Debug("Found leaf in storage", "path", pathToStr(it))
 			path := pathToStr(it)
-			value := hexutil.Encode(it.LeafBlob())
-			storageDiffs[path] = DiffString{Value: &value}
+			storageValue := hexutil.Encode(it.LeafBlob())
+			storageDiffs[path] = DiffStorage{
+				Value: &storageValue,
+			}
 		}
 
 		cont := it.Next(true)
