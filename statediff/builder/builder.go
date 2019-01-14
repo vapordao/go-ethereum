@@ -248,8 +248,10 @@ func (sdb *builder) buildStorageDiffsIncremental(oldSR common.Hash, newSR common
 		if it.Leaf() {
 			log.Debug("Found leaf in storage", "path", pathToStr(it))
 			path := pathToStr(it)
+			storageKey:= hexutil.Encode(it.LeafKey())
 			storageValue := hexutil.Encode(it.LeafBlob())
 			storageDiffs[path] = DiffStorage{
+				Key:   &storageKey,
 				Value: &storageValue,
 			}
 		}

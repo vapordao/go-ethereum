@@ -64,6 +64,7 @@ type AccountDiff struct {
 }
 
 type DiffStorage struct {
+	Key *string `json:"key" gencodec:"optional"`
 	Value *string `json:"value"  gencodec:"optional"`
 }
 type DiffString struct {

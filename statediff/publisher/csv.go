@@ -14,7 +14,7 @@ var (
 	Headers = []string{
 		"blockNumber", "blockHash", "accountAction", "codeHash",
 		"nonceValue", "balanceValue", "contractRoot", "storageDiffPaths",
-		"accountAddress", "storageValue",
+		"accountAddress", "storageKey", "storageValue",
 	}
 
 	timeStampFormat      = "20060102150405.00000"
@@ -88,7 +88,8 @@ func formatAccountData(accountAddr common.Address, accountDiff builder.AccountDi
 	newContractRoot := accountDiff.ContractRoot.Value
 	address := accountAddr.String()
 	var result [][]string
-	for storagePath, storageValue := range accountDiff.Storage {
+
+	for storagePath, storage := range accountDiff.Storage {
 		formattedAccountData := []string{
 			blockNumberString,
 			blockHash,
@@ -99,7 +100,8 @@ func formatAccountData(accountAddr common.Address, accountDiff builder.AccountDi
 			*newContractRoot,
 			storagePath,
 			address,
-			*storageValue.Value,
+			*storage.Key,
+			*storage.Value,
 		}
 
 		result = append(result, formattedAccountData)

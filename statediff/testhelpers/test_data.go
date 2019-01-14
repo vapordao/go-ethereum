@@ -15,8 +15,12 @@ var (
 	NewBalanceValue     = rand.Int63()
 	ContractRoot        = "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"
 	StoragePath         = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+	StorageKey        = "0000000000000000000000000000000000000000000000000000000000000001"
 	StorageValue        = "0x03"
-	storage             = map[string]builder.DiffStorage{StoragePath: {Value: &StorageValue}}
+	storage             = map[string]builder.DiffStorage{StoragePath: {
+		Key:   &StorageKey,
+		Value: &StorageValue,
+	}}
 	address             = common.HexToAddress("0xaE9BEa628c4Ce503DcFD7E305CaB4e29E7476592")
 	ContractAddress     = address.String()
 	CreatedAccountDiffs = map[common.Address]builder.AccountDiff{address: {

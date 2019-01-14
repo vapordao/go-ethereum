@@ -73,6 +73,8 @@ func TestBuilder(t *testing.T) {
 		nonce3                = uint64(3)
 		originalContractRoot  = "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"
 		newContractRoot       = "0x9e676b23802aff85d29b4f0243939bc6ecfdca2a41532310091781854d6ffeb2"
+		storageLocation       = common.HexToHash("2")
+		newStorageKey         = crypto.Keccak256Hash(storageLocation[:]).String()
 		newStorageValue       = "0x03"
 	)
 
@@ -222,6 +224,7 @@ func TestBuilder(t *testing.T) {
 						ContractRoot: b.DiffString{Value: &newContractRoot},
 						Storage: map[string]b.DiffStorage{
 							"0x405787fa12a823e0f2b7631cc41b3ba8828b3321ca811111fa75cd3aa3bb5ace": {
+								Key: &newStorageKey,
 								Value: &newStorageValue},
 						},
 					},

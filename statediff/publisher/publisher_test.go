@@ -35,6 +35,7 @@ var expectedCreatedAccountRow = []string{
 	testhelpers.ContractRoot,
 	testhelpers.StoragePath,
 	testhelpers.ContractAddress,
+	"0000000000000000000000000000000000000000000000000000000000000001",
 	testhelpers.StorageValue,
 }
 
@@ -48,6 +49,7 @@ var expectedUpdatedAccountRow = []string{
 	testhelpers.ContractRoot,
 	testhelpers.StoragePath,
 	testhelpers.ContractAddress,
+	"0000000000000000000000000000000000000000000000000000000000000001",
 	testhelpers.StorageValue,
 }
 
@@ -61,6 +63,7 @@ var expectedDeletedAccountRow = []string{
 	testhelpers.ContractRoot,
 	testhelpers.StoragePath,
 	testhelpers.ContractAddress,
+	"0000000000000000000000000000000000000000000000000000000000000001",
 	testhelpers.StorageValue,
 }
 
