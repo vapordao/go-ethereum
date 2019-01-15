@@ -174,7 +174,6 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 	bc.SetProcessor(NewStateProcessor(chainConfig, bc, engine))
 
 	var err error
-
 	bc.hc, err = NewHeaderChain(db, chainConfig, engine, bc.getProcInterrupt)
 	if err != nil {
 		return nil, err
@@ -1188,7 +1187,6 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []interface{}, []*ty
 			parent = chain[i-1]
 		}
 		state, err := state.New(parent.Root(), bc.stateCache)
-
 		if err != nil {
 			return i, events, coalescedLogs, err
 		}

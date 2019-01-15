@@ -34,11 +34,11 @@ type extractor struct {
 	Publisher publisher.Publisher // Interface for publishing state diff objects to a datastore (e.g. IPFS)
 }
 
-func NewExtractor(builder builder.Builder, publisher publisher.Publisher) (*extractor, error) {
+func NewExtractor(builder builder.Builder, publisher publisher.Publisher) *extractor {
 	return &extractor{
 		Builder:   builder,
 		Publisher: publisher,
-	}, nil
+	}
 }
 
 func (e *extractor) ExtractStateDiff(parent, current types.Block) (string, error) {

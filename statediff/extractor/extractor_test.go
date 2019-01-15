@@ -23,7 +23,7 @@ var err error
 func TestExtractor(t *testing.T) {
 	publisher = mocks.Publisher{}
 	builder = mocks.Builder{}
-	extractor, err = e.NewExtractor(&builder, &publisher)
+	extractor = e.NewExtractor(&builder, &publisher)
 	if err != nil {
 		t.Error(err)
 	}

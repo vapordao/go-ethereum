@@ -31,10 +31,10 @@ func NewStateDiffService(db ethdb.Database, blockChain *core.BlockChain, config 
 	builder := b.NewBuilder(db)
 	publisher, err := p.NewPublisher(config)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 
-	extractor, _ := e.NewExtractor(builder, publisher)
+	extractor := e.NewExtractor(builder, publisher)
 	return &StateDiffService{
 		BlockChain: blockChain,
 		Extractor:  extractor,
