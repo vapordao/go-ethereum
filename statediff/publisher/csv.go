@@ -46,16 +46,9 @@ func (p *publisher) publishStateDiffToCSV(sd builder.StateDiff) (string, error) 
 
 	var data [][]string
 	data = append(data, Headers)
-	for _, row := range accumulateAccountRows(sd, createdAccountAction) {
+	for _, row := range accumulateAccountRows(sd) {
 		data = append(data, row)
 	}
-	for _, row := range accumulateAccountRows(sd, updatedAccountAction) {
-		data = append(data, row)
-	}
-	for _, row := range accumulateAccountRows(sd, deletedAccountAction) {
-		data = append(data, row)
-	}
-
 	for _, value := range data {
 		err := writer.Write(value)
 		if err != nil {
@@ -66,10 +59,26 @@ func (p *publisher) publishStateDiffToCSV(sd builder.StateDiff) (string, error) 
 	return filePath, nil
 }
 
-func accumulateAccountRows(sd builder.StateDiff, accountAction string) [][]string {
+func accumulateAccountRows(sd builder.StateDiff) [][]string {
 	var accountRows [][]string
+	for accountAddr, accountDiff := range sd.CreatedAccounts {
+		formattedAccountData := formatAccountData(accountAddr, accountDiff, sd, createdAccountAction)
+
+		for _, accountData := range formattedAccountData {
+			accountRows = append(accountRows, accountData)
+		}
+	}
+
 	for accountAddr, accountDiff := range sd.UpdatedAccounts {
-		formattedAccountData := formatAccountData(accountAddr, accountDiff, sd, accountAction)
+		formattedAccountData := formatAccountData(accountAddr, accountDiff, sd, updatedAccountAction)
+
+		for _, accountData := range formattedAccountData {
+			accountRows = append(accountRows, accountData)
+		}
+	}
+
+	for accountAddr, accountDiff := range sd.DeletedAccounts {
+		formattedAccountData := formatAccountData(accountAddr, accountDiff, sd, deletedAccountAction)
 
 		for _, accountData := range formattedAccountData {
 			accountRows = append(accountRows, accountData)
@@ -89,7 +98,25 @@ func formatAccountData(accountAddr common.Address, accountDiff builder.AccountDi
 	address := accountAddr.String()
 	var result [][]string
 
-	for storagePath, storage := range accountDiff.Storage {
+	if len(accountDiff.Storage) > 0 {
+		for storagePath, storage := range accountDiff.Storage {
+			formattedAccountData := []string{
+				blockNumberString,
+				blockHash,
+				accountAction,
+				codeHash,
+				nonce,
+				balance,
+				*newContractRoot,
+				storagePath,
+				address,
+				*storage.Key,
+				*storage.Value,
+			}
+
+			result = append(result, formattedAccountData)
+		}
+	} else {
 		formattedAccountData := []string{
 			blockNumberString,
 			blockHash,
@@ -98,15 +125,13 @@ func formatAccountData(accountAddr common.Address, accountDiff builder.AccountDi
 			nonce,
 			balance,
 			*newContractRoot,
-			storagePath,
+			"",
 			address,
-			*storage.Key,
-			*storage.Value,
+			"",
+			"",
 		}
-
 		result = append(result, formattedAccountData)
 	}
 
 	return result
 }
-

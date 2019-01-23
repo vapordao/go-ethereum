@@ -39,6 +39,20 @@ var expectedCreatedAccountRow = []string{
 	testhelpers.StorageValue,
 }
 
+var expectedCreatedAccountWithoutStorageUpdateRow = []string{
+	strconv.FormatInt(testhelpers.BlockNumber, 10),
+	testhelpers.BlockHash,
+	"created",
+	testhelpers.CodeHash,
+	strconv.FormatUint(testhelpers.NewNonceValue, 10),
+	strconv.FormatInt(testhelpers.NewBalanceValue, 10),
+	testhelpers.ContractRoot,
+	"",
+	testhelpers.AnotherContractAddress,
+	"",
+	"",
+}
+
 var expectedUpdatedAccountRow = []string{
 	strconv.FormatInt(testhelpers.BlockNumber, 10),
 	testhelpers.BlockHash,
@@ -176,10 +190,13 @@ func testAccountDiffs(t *testing.T) {
 	if !equals(lines[1], expectedCreatedAccountRow) {
 		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
-	if !equals(lines[2], expectedUpdatedAccountRow) {
+	if !equals(lines[2], expectedCreatedAccountWithoutStorageUpdateRow) {
 		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
-	if !equals(lines[3], expectedDeletedAccountRow) {
+	if !equals(lines[3], expectedUpdatedAccountRow) {
+		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
+	}
+	if !equals(lines[4], expectedDeletedAccountRow) {
 		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 }
@@ -229,7 +246,7 @@ func testDefaultPublisher(t *testing.T) {
 	if err != nil {
 		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
-	if !equals(len(lines), 4) {
+	if !equals(len(lines), 5) {
 		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 	if !equals(lines[0], p.Headers) {
@@ -264,7 +281,7 @@ func testDefaultDirectory(t *testing.T) {
 	if err != nil {
 		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
-	if !equals(len(lines), 4) {
+	if !equals(len(lines), 5) {
 		t.Errorf(testhelpers.ErrorFormatString, t.Name(), err)
 	}
 	if !equals(lines[0], p.Headers) {
