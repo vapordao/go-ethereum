@@ -37,21 +37,21 @@ var (
 	block0Hash, block1Hash, block2Hash, block3Hash common.Hash
 	block0, block1, block2, block3                 *types.Block
 	builder                                        b.Builder
-	miningReward                                   = int64(3000000000000000000)
+	miningReward                                   = int64(2000000000000000000)
 	burnAddress                                    = common.HexToAddress("0x0")
 )
 
 func TestBuilder(t *testing.T) {
-	_, blocks := makeChain(3, genesis)
+	_, blockMap := makeChain(3, genesis)
 	block0Hash = common.HexToHash("0xd1721cfd0b29c36fd7a68f25c128e86413fb666a6e1d68e89b875bd299262661")
-	block1Hash = common.HexToHash("0x47c398dd688eaa4dd11b006888156783fe32df83d59b197c0fcd303408103d39")
-	block2Hash = common.HexToHash("0x351b2f531838683ba457e8ca4d3a844cc48147dceafbcb589dc6e3227856ee75")
-	block3Hash = common.HexToHash("0xfa40fbe2d98d98b3363a778d52f2bcd29d6790b9b3f3cab2b167fd12d3550f73")
+	block1Hash = common.HexToHash("0xbbe88de60ba33a3f18c0caa37d827bfb70252e19e40a07cd34041696c35ecb1a")
+	block2Hash = common.HexToHash("0xdbd7de0fc3665c80837f6a77582a9895e80f89d4a7bc3bc590c6c70f123dfbc5")
+	block3Hash = common.HexToHash("0xe4d50c9deaf561e61e4d52b6372697577345e4e2b0b20e22406ef23b46f83d38")
 
-	block0 = blocks[block0Hash]
-	block1 = blocks[block1Hash]
-	block2 = blocks[block2Hash]
-	block3 = blocks[block3Hash]
+	block0 = blockMap[block0Hash]
+	block1 = blockMap[block1Hash]
+	block2 = blockMap[block2Hash]
+	block3 = blockMap[block3Hash]
 	builder = b.NewBuilder(testdb)
 
 	type arguments struct {
