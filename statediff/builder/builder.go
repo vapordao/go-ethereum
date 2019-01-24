@@ -212,24 +212,7 @@ func (sdb *builder) buildStorageDiffsEventual(sr common.Hash) (map[string]DiffSt
 		return nil, err
 	}
 	it := sTrie.NodeIterator(make([]byte, 0))
-	storageDiffs := make(map[string]DiffStorage)
-	for {
-		log.Debug("Iterating over state at path ", "path", pathToStr(it))
-		if it.Leaf() {
-			log.Debug("Found leaf in storage", "path", pathToStr(it))
-			path := pathToStr(it)
-			storageKey:= hexutil.Encode(it.LeafKey())
-			storageValue := hexutil.Encode(it.LeafBlob())
-			storageDiffs[path] = DiffStorage{
-				Key:  &storageKey,
-				Value: &storageValue,
-			}
-		}
-		cont := it.Next(true)
-		if !cont {
-			break
-		}
-	}
+	storageDiffs := buildStorageDiffsFromTrie(it)
 	return storageDiffs, nil
 }
 
@@ -247,8 +230,15 @@ func (sdb *builder) buildStorageDiffsIncremental(oldSR common.Hash, newSR common
 	oldIt := oldTrie.NodeIterator(make([]byte, 0))
 	newIt := newTrie.NodeIterator(make([]byte, 0))
 	it, _ := trie.NewDifferenceIterator(oldIt, newIt)
+	storageDiffs := buildStorageDiffsFromTrie(it)
+
+	return storageDiffs, nil
+}
+
+func buildStorageDiffsFromTrie(it trie.NodeIterator) map[string]DiffStorage {
 	storageDiffs := make(map[string]DiffStorage)
 	for {
+		log.Debug("Iterating over state at path ", "path", pathToStr(it))
 		if it.Leaf() {
 			log.Debug("Found leaf in storage", "path", pathToStr(it))
 			path := pathToStr(it)
@@ -265,7 +255,8 @@ func (sdb *builder) buildStorageDiffsIncremental(oldSR common.Hash, newSR common
 			break
 		}
 	}
-	return storageDiffs, nil
+
+	return storageDiffs
 }
 
 func (sdb *builder) addressByPath(path []byte) (*common.Address, error) {
@@ -278,5 +269,4 @@ func (sdb *builder) addressByPath(path []byte) (*common.Address, error) {
 		log.Debug("Address found", "Address", addr)
 		return &addr, nil
 	}
-
 }
