@@ -218,8 +218,12 @@ func (sdb *builder) buildStorageDiffsEventual(sr common.Hash) (map[string]DiffSt
 		if it.Leaf() {
 			log.Debug("Found leaf in storage", "path", pathToStr(it))
 			path := pathToStr(it)
-			value := hexutil.Encode(it.LeafBlob())
-			storageDiffs[path] = DiffStorage{Value: &value}
+			storageKey:= hexutil.Encode(it.LeafKey())
+			storageValue := hexutil.Encode(it.LeafBlob())
+			storageDiffs[path] = DiffStorage{
+				Key:  &storageKey,
+				Value: &storageValue,
+			}
 		}
 		cont := it.Next(true)
 		if !cont {
