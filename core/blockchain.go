@@ -71,11 +71,11 @@ const (
 // CacheConfig contains the configuration values for the trie caching/pruning
 // that's resident in a blockchain.
 type CacheConfig struct {
-	Disabled          bool          // Whether to disable trie write caching (archive node)
-	TrieCleanLimit    int           // Memory allowance (MB) to use for caching trie nodes in memory
-	TrieDirtyLimit    int           // Memory limit (MB) at which to start flushing dirty trie nodes to disk
-	TrieTimeLimit     time.Duration // Time limit after which to flush the current in-memory trie to disk
-	ProcessStateDiffs bool
+	Disabled             bool          // Whether to disable trie write caching (archive node)
+	TrieCleanLimit       int           // Memory allowance (MB) to use for caching trie nodes in memory
+	TrieDirtyLimit       int           // Memory limit (MB) at which to start flushing dirty trie nodes to disk
+	TrieTimeLimit        time.Duration // Time limit after which to flush the current in-memory trie to disk
+	ProcessingStateDiffs bool          // Whether statediffs processing should be taken into a account before a trie is pruned
 }
 
 // BlockChain represents the canonical chain given a database with a genesis
@@ -928,14 +928,8 @@ func (bc *BlockChain) WriteBlockWithoutState(block *types.Block, td *big.Int) (e
 }
 
 func (bc *BlockChain) AddToStateDiffProcessedCollection(hash common.Hash) {
-	count, ok := bc.stateDiffsProcessed[hash]
-
-	if ok {
-		count++
-		bc.stateDiffsProcessed[hash] = count
-	} else {
-		bc.stateDiffsProcessed[hash] = 1
-	}
+	count := bc.stateDiffsProcessed[hash]
+	bc.stateDiffsProcessed[hash] = count + 1
 }
 
 // WriteBlockWithState writes the block and all associated state to the database.
@@ -1011,7 +1005,7 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 					break
 				}
 
-				if bc.cacheConfig.ProcessStateDiffs {
+				if bc.cacheConfig.ProcessingStateDiffs {
 					if !bc.allowedRootToBeDereferenced(root.(common.Hash)) {
 						bc.triegc.Push(root, number)
 						break
@@ -1074,7 +1068,9 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 	return status, nil
 }
 
-//if we haven't processed the statediff for a given state root and it's child, don't dereference it yet
+// since we need the state tries of the current block and its parent in-memory
+// in order to process statediffs, we should avoid dereferencing roots until
+// its statediff and its child have been processed
 func (bc *BlockChain) allowedRootToBeDereferenced(root common.Hash) bool {
 	diffProcessedForSelfAndChildCount := 2
 	count := bc.stateDiffsProcessed[root]
