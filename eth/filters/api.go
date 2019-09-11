@@ -28,6 +28,7 @@ import (
 	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
@@ -225,6 +226,36 @@ func (api *PublicFilterAPI) NewHeads(ctx context.Context) (*rpc.Subscription, er
 				return
 			case <-notifier.Closed():
 				headersSub.Unsubscribe()
+				return
+			}
+		}
+	}()
+
+	return rpcSub, nil
+}
+
+// NewStateDiffs sent a notification each time an account changes in a block.
+func (api *PublicFilterAPI) NewStateDiffs(ctx context.Context) (*rpc.Subscription, error) {
+	notifier, supported := rpc.NotifierFromContext(ctx)
+	if !supported {
+		return &rpc.Subscription{}, rpc.ErrNotificationsUnsupported
+	}
+
+	rpcSub := notifier.CreateSubscription()
+
+	go func() {
+		stateDiffs := make(chan map[common.Address]state.Account)
+		stateDiffsSub := api.events.SubscribeStateDiffs(stateDiffs)
+
+		for {
+			select {
+			case d := <-stateDiffs:
+				notifier.Notify(rpcSub.ID, d)
+			case <-rpcSub.Err():
+				stateDiffsSub.Unsubscribe()
+				return
+			case <-notifier.Closed():
+				stateDiffsSub.Unsubscribe()
 				return
 			}
 		}

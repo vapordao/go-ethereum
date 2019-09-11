@@ -608,7 +608,7 @@ func (w *worker) resultLoop() {
 			case core.SideStatTy:
 				events = append(events, core.ChainSideEvent{Block: block})
 			}
-			w.chain.PostChainEvents(events, logs)
+			w.chain.PostChainEvents(events, logs, task.state.GetDirtyAccounts())
 
 			// Insert the block into the set of pending ones to resultLoop for confirmations
 			w.unconfirmed.Insert(block.NumberU64(), block.Hash())

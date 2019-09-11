@@ -685,6 +685,23 @@ func (s *StateDB) clearJournalAndRefund() {
 	s.refund = 0
 }
 
+func (s *StateDB) GetDirtyAccounts() map[common.Address]Account {
+	for addr := range s.journal.dirties {
+		s.stateObjectsDirty[addr] = struct{}{}
+	}
+
+	results := make(map[common.Address]Account)
+
+	for addr, stateObject := range s.stateObjects {
+		_, isDirty := s.stateObjectsDirty[addr]
+		if isDirty {
+			results[addr] = stateObject.data
+		}
+	}
+
+	return results
+}
+
 // Commit writes the state to the underlying in-memory trie database.
 func (s *StateDB) Commit(deleteEmptyObjects bool) (root common.Hash, err error) {
 	defer s.clearJournalAndRefund()

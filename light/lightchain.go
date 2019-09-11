@@ -531,6 +531,12 @@ func (lc *LightChain) SubscribeRemovedLogsEvent(ch chan<- core.RemovedLogsEvent)
 	return lc.scope.Track(new(event.Feed).Subscribe(ch))
 }
 
+// SubscribeStateDiffs implements the interface of filters.Backend
+// LightChain does not sen state diffs, so return an empty subscription.
+func (lc *LightChain) SubscribeStateDiffs(ch chan<- map[common.Address]state.Account) event.Subscription {
+	return lc.scope.Track(new(event.Feed).Subscribe(ch))
+}
+
 // DisableCheckFreq disables header validation. This is used for ultralight mode.
 func (lc *LightChain) DisableCheckFreq() {
 	atomic.StoreInt32(&lc.disableCheckFreq, 1)
