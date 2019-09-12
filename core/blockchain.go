@@ -1253,7 +1253,7 @@ func (bc *BlockChain) writeKnownBlock(block *types.Block) error {
 }
 
 // WriteBlockWithState writes the block and all associated state to the database.
-func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.Receipt, state *state.StateDB) (status WriteStatus, err error) {
+func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.Receipt, state *state.StateDB) (status WriteStatus, stateDiffs map[common.Address]state.Account, err error) {
 	bc.chainmu.Lock()
 	defer bc.chainmu.Unlock()
 
@@ -1262,14 +1262,14 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 
 // writeBlockWithState writes the block and all associated state to the database,
 // but is expects the chain mutex to be held.
-func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.Receipt, state *state.StateDB) (status WriteStatus, err error) {
+func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.Receipt, state *state.StateDB) (status WriteStatus, stateDiffs map[common.Address]state.Account, err error) {
 	bc.wg.Add(1)
 	defer bc.wg.Done()
 
 	// Calculate the total difficulty of the block
 	ptd := bc.GetTd(block.ParentHash(), block.NumberU64()-1)
 	if ptd == nil {
-		return NonStatTy, consensus.ErrUnknownAncestor
+		return NonStatTy, stateDiffs, consensus.ErrUnknownAncestor
 	}
 	// Make sure no inconsistent state is leaked during insertion
 	currentBlock := bc.CurrentBlock()
@@ -1278,20 +1278,20 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 
 	// Irrelevant of the canonical status, write the block itself to the database
 	if err := bc.hc.WriteTd(block.Hash(), block.NumberU64(), externTd); err != nil {
-		return NonStatTy, err
+		return NonStatTy, stateDiffs, err
 	}
 	rawdb.WriteBlock(bc.db, block)
 
-	root, err := state.Commit(bc.chainConfig.IsEIP158(block.Number()))
+	root, modifiedAccounts, err := state.Commit(bc.chainConfig.IsEIP158(block.Number()))
 	if err != nil {
-		return NonStatTy, err
+		return NonStatTy, stateDiffs, err
 	}
 	triedb := bc.stateCache.TrieDB()
 
 	// If we're running an archive node, always flush
 	if bc.cacheConfig.TrieDirtyDisabled {
 		if err := triedb.Commit(root, false); err != nil {
-			return NonStatTy, err
+			return NonStatTy, modifiedAccounts, err
 		}
 	} else {
 		// Full but not archive node, do proper garbage collection
@@ -1367,7 +1367,7 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 		// Reorganise the chain if the parent is not the head block
 		if block.ParentHash() != currentBlock.Hash() {
 			if err := bc.reorg(currentBlock, block); err != nil {
-				return NonStatTy, err
+				return NonStatTy, modifiedAccounts, err
 			}
 		}
 		// Write the positional metadata for transaction/receipt lookups and preimages
@@ -1379,7 +1379,7 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 		status = SideStatTy
 	}
 	if err := batch.Write(); err != nil {
-		return NonStatTy, err
+		return NonStatTy, modifiedAccounts, err
 	}
 
 	// Set new head.
@@ -1387,7 +1387,7 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 		bc.insert(block)
 	}
 	bc.futureBlocks.Remove(block.Hash())
-	return status, nil
+	return status, modifiedAccounts, nil
 }
 
 // addFutureBlock checks if the block is within the max allowed window to get
@@ -1623,7 +1623,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks, verifySeals bool) (int, []
 		}
 		// Process block using the parent state as reference point
 		substart := time.Now()
-		receipts, logs, processedStateDiffs, usedGas, err := bc.processor.Process(block, statedb, bc.vmConfig)
+		receipts, logs, usedGas, err := bc.processor.Process(block, statedb, bc.vmConfig)
 		if err != nil {
 			bc.reportBlock(block, receipts, err)
 			atomic.StoreUint32(&followupInterrupt, 1)
@@ -1658,7 +1658,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks, verifySeals bool) (int, []
 
 		// Write the block to the chain and get the status.
 		substart = time.Now()
-		status, err := bc.writeBlockWithState(block, receipts, statedb)
+		status, committedStateDiffs, err := bc.writeBlockWithState(block, receipts, statedb)
 		if err != nil {
 			atomic.StoreUint32(&followupInterrupt, 1)
 			return it.index, events, coalescedLogs, stateDiffs, err
@@ -1680,7 +1680,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks, verifySeals bool) (int, []
 				"root", block.Root())
 
 			coalescedLogs = append(coalescedLogs, logs...)
-			stateDiffs = processedStateDiffs
+			stateDiffs = committedStateDiffs
 			events = append(events, ChainEvent{block, block.Hash(), logs})
 			lastCanon = block
 

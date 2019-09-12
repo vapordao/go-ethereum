@@ -685,27 +685,11 @@ func (s *StateDB) clearJournalAndRefund() {
 	s.refund = 0
 }
 
-func (s *StateDB) GetDirtyAccounts() map[common.Address]Account {
-	for addr := range s.journal.dirties {
-		s.stateObjectsDirty[addr] = struct{}{}
-	}
-
-	results := make(map[common.Address]Account)
-
-	for addr, stateObject := range s.stateObjects {
-		_, isDirty := s.stateObjectsDirty[addr]
-		if isDirty {
-			results[addr] = stateObject.data
-		}
-	}
-
-	return results
-}
-
 // Commit writes the state to the underlying in-memory trie database.
-func (s *StateDB) Commit(deleteEmptyObjects bool) (root common.Hash, err error) {
+func (s *StateDB) Commit(deleteEmptyObjects bool) (root common.Hash, modifiedAccounts map[common.Address]Account, err error) {
 	defer s.clearJournalAndRefund()
 
+	modifiedAccounts = make(map[common.Address]Account)
 	for addr := range s.journal.dirties {
 		s.stateObjectsDirty[addr] = struct{}{}
 	}
@@ -716,6 +700,7 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (root common.Hash, err error) 
 		case stateObject.suicided || (isDirty && deleteEmptyObjects && stateObject.empty()):
 			// If the object has been removed, don't bother syncing it
 			// and just mark it for deletion in the trie.
+			modifiedAccounts[addr] = stateObject.data
 			s.deleteStateObject(stateObject)
 		case isDirty:
 			// Write any contract code associated with the state object
@@ -725,8 +710,9 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (root common.Hash, err error) 
 			}
 			// Write any storage changes in the state object to its storage trie.
 			if err := stateObject.CommitTrie(s.db); err != nil {
-				return common.Hash{}, err
+				return common.Hash{}, nil, err
 			}
+			modifiedAccounts[addr] = stateObject.data
 			// Update the object in the main account trie.
 			s.updateStateObject(stateObject)
 		}
@@ -750,5 +736,5 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (root common.Hash, err error) 
 		}
 		return nil
 	})
-	return root, err
+	return root, modifiedAccounts, err
 }
