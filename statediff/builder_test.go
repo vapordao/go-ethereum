@@ -43,8 +43,9 @@ var (
 
 	block0Hash              = common.HexToHash("0xd1721cfd0b29c36fd7a68f25c128e86413fb666a6e1d68e89b875bd299262661")
 	block1Hash              = common.HexToHash("0xbbe88de60ba33a3f18c0caa37d827bfb70252e19e40a07cd34041696c35ecb1a")
-	block2Hash              = common.HexToHash("0x34ad0fd9bb2911986b75d518c822641079dea823bc6952343ebf05da1062b6f5")
-	block3Hash              = common.HexToHash("0x9872058136c560a6ebed0c0522b8d3016fc21f4fb0fb6585ddd8fd4c54f9909a")
+	block2Hash              = common.HexToHash("0x72b1faad1a7d3e5a93199cb683e153baa23d35800bf19283c86ddabbb473bfeb")
+	block3Hash              = common.HexToHash("0xe380b7578461351cea722137c45ac8685f014caff773f2c139b4ab3a8995ec77")
+
 	balanceChange10000      = int64(10000)
 	balanceChange1000       = int64(1000)
 	block1BankBalance       = int64(99990000)
