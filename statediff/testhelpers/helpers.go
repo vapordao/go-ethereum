@@ -74,9 +74,7 @@ func testChainGen(i int, block *core.BlockGen) {
 	case 2:
 		// Block 3 is empty but was mined by account #2.
 		block.SetCoinbase(Account2Addr)
-		//get function: 60cd2685
-		//put function: c16431b9
-		data := common.Hex2Bytes("C16431B900000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003")
+		data := []byte{145, 38, 247, 25}
 		tx, _ := types.SignTx(types.NewTransaction(block.TxNonce(TestBankAddress), ContractAddr, big.NewInt(0), 100000, nil, data), signer, TestBankKey)
 		block.AddTx(tx)
 	}
