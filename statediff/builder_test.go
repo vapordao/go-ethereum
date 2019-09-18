@@ -64,15 +64,8 @@ var (
 
 	//slot 1: mapping(uint => TestStruct)
 	// calculate key for TestStruct.var1
-	mappingKey      = "1"
-	mappingKeyBytes = []byte{1}
-	indexInContract = "0000000000000000000000000000000000000000000000000000000000000001"
-	leftPaddedBytes = common.LeftPadBytes(mappingKeyBytes, 32)
-	hexKey          = common.Bytes2Hex(leftPaddedBytes)
-	keyBytes        =common.FromHex(hexKey + indexInContract)
-	encoded         = crypto.Keccak256Hash(keyBytes)        // cc69885fda6bcc1a4ace058b4a62bf5e179ea78fd58a1ccd71c22cc9b688792f
-	keccakOfKey     = crypto.Keccak256Hash(encoded.Bytes()) // the statediff service is currently emitting the key as a keccakhas
-
+	testStructVar1Key = calculateTestStructStorageKey() // cc69885fda6bcc1a4ace058b4a62bf5e179ea78fd58a1ccd71c22cc9b688792f
+	keccakOfTestStructVar1Key     = crypto.Keccak256Hash(testStructVar1Key.Bytes()) // the statediff service is currently emitting the key as a keccak hash
 	testStructVar1Value = common.Hex2Bytes("04")
 
 	//slot 2: addressData and uint48Data (since the address and uint48 data are both <32 bytes, they are packed into one storage slot
@@ -366,7 +359,7 @@ func TestBuilder(t *testing.T) {
 							},
 							{ //slot 1: storage diff for var 1 of TestStruct
 								Leaf:  true,
-								Key:   keccakOfKey[:],
+								Key:   keccakOfTestStructVar1Key[:],
 								Value: testStructVar1Value,
 								Proof: [][]byte{{248, 145, 128, 128, 160, 131, 156, 157, 229, 241, 229, 169, 135, 165, 29, 173, 181, 227, 247, 106, 24, 93, 54, 96, 54, 130, 34, 118, 15, 65, 136, 243, 57, 132, 179, 24, 15, 128, 160, 236, 14, 243, 12, 248, 114, 138, 99, 83, 220, 38, 86, 88, 72, 28, 50, 9, 125, 187, 191, 243, 60, 11, 73, 65, 86, 219, 100, 143, 31, 48, 21, 128, 160, 141, 43, 107, 231, 173, 34, 95, 14, 11, 236, 18, 80, 34, 182, 150, 149, 217, 19, 98, 95, 37, 77, 139, 251, 118, 174, 170, 130, 227, 57, 90, 212, 128, 128, 128, 128, 128, 160, 185, 43, 188, 252, 172, 173, 59, 131, 59, 77, 42, 73, 147, 6, 154, 243, 101, 184, 174, 31, 185, 74, 190, 92, 211, 248, 157, 151, 238, 145, 20, 98, 128, 128, 128, 128},
 									{226, 160, 54, 179, 39, 64, 173, 128, 65, 188, 195, 185, 9, 199, 45, 126, 26, 254, 96, 9, 78, 197, 94, 60, 222, 50, 155, 75, 58, 40, 80, 29, 130, 108, 4}},
@@ -571,7 +564,7 @@ func TestBuilderWithWatchedAddressList(t *testing.T) {
 							},
 							{ //storage diff for var 1 of TestStruct
 								Leaf:  true,
-								Key:   keccakOfKey[:],
+								Key:   keccakOfTestStructVar1Key[:],
 								Value: testStructVar1Value,
 								Proof: [][]byte{{248, 145, 128, 128, 160, 131, 156, 157, 229, 241, 229, 169, 135, 165, 29, 173, 181, 227, 247, 106, 24, 93, 54, 96, 54, 130, 34, 118, 15, 65, 136, 243, 57, 132, 179, 24, 15, 128, 160, 236, 14, 243, 12, 248, 114, 138, 99, 83, 220, 38, 86, 88, 72, 28, 50, 9, 125, 187, 191, 243, 60, 11, 73, 65, 86, 219, 100, 143, 31, 48, 21, 128, 160, 141, 43, 107, 231, 173, 34, 95, 14, 11, 236, 18, 80, 34, 182, 150, 149, 217, 19, 98, 95, 37, 77, 139, 251, 118, 174, 170, 130, 227, 57, 90, 212, 128, 128, 128, 128, 128, 160, 185, 43, 188, 252, 172, 173, 59, 131, 59, 77, 42, 73, 147, 6, 154, 243, 101, 184, 174, 31, 185, 74, 190, 92, 211, 248, 157, 151, 238, 145, 20, 98, 128, 128, 128, 128},
 									{226, 160, 54, 179, 39, 64, 173, 128, 65, 188, 195, 185, 9, 199, 45, 126, 26, 254, 96, 9, 78, 197, 94, 60, 222, 50, 155, 75, 58, 40, 80, 29, 130, 108, 4}},
@@ -614,6 +607,16 @@ func TestBuilderWithWatchedAddressList(t *testing.T) {
 			t.Errorf("actual state diff rlp: %+v\nexpected state diff rlp: %+v", receivedStateDiffRlp, expectedStateDiffRlp)
 		}
 	}
+}
+
+func calculateTestStructStorageKey() common.Hash {
+	mappingKeyBytes := []byte{1}
+	indexInContract := "0000000000000000000000000000000000000000000000000000000000000001"
+	leftPaddedBytes := common.LeftPadBytes(mappingKeyBytes, 32)
+	hexKey          := common.Bytes2Hex(leftPaddedBytes)
+	keyBytes        := common.FromHex(hexKey + indexInContract)
+
+	return crypto.Keccak256Hash(keyBytes)
 }
 
 /*
