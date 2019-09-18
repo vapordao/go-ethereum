@@ -58,24 +58,24 @@ var (
 	newContractRoot                = "0x7cc40eefd6e1f91d01a7d3015c7687da166d9ec454b6cf277840b8755309452d"
 
 	//slot 0: bytes32Data
-	storageSlotZero  = common.HexToHash("0")
+	storageSlotZero                = common.HexToHash("0")
 	storageSlotZeroKey             = crypto.Keccak256Hash(storageSlotZero[:])                                                                                   //TODO: rename to storageSlotZeroKey
 	updatedBytes32DataStorageValue = []byte{160, 116, 101, 115, 116, 32, 100, 97, 116, 97, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} //this is the []byte representation of "test data"
 
 	//slot 1: mapping(uint => TestStruct)
 	// calculate key for TestStruct.var1
-	testStructVar1Key = calculateTestStructStorageKey() // cc69885fda6bcc1a4ace058b4a62bf5e179ea78fd58a1ccd71c22cc9b688792f
-	keccakOfTestStructVar1Key     = crypto.Keccak256Hash(testStructVar1Key.Bytes()) // the statediff service is currently emitting the key as a keccak hash
-	testStructVar1Value = common.Hex2Bytes("04")
+	testStructVar1Key         = calculateTestStructStorageKey()                 // cc69885fda6bcc1a4ace058b4a62bf5e179ea78fd58a1ccd71c22cc9b688792f
+	keccakOfTestStructVar1Key = crypto.Keccak256Hash(testStructVar1Key.Bytes()) // the statediff service is currently emitting the key as a keccak hash
+	testStructVar1Value       = common.Hex2Bytes("04")
 
 	//slot 2: addressData and uint48Data (since the address and uint48 data are both <32 bytes, they are packed into one storage slot
-	storageSlotTwo   = common.HexToHash("2")
-	storageSlotTwoKey                 = crypto.Keccak256Hash(storageSlotTwo[:]).Bytes()
+	storageSlotTwo               = common.HexToHash("2")
+	storageSlotTwoKey            = crypto.Keccak256Hash(storageSlotTwo[:]).Bytes()
 	storageOneSlotRlpEncodeValue = []byte{149, 2, 108, 58, 187, 55, 148, 159, 30, 0, 155, 175, 50, 252, 145, 182, 149, 19, 118, 153, 116, 213}
 
 	// slot 3: uintArrayData
-	storageSlotThree = common.HexToHash("3")
-	storageSlotThreeKey            = crypto.Keccak256Hash(storageSlotThree[:]).Bytes()
+	storageSlotThree                  = common.HexToHash("3")
+	storageSlotThreeKey               = crypto.Keccak256Hash(storageSlotThree[:]).Bytes()
 	originalUintArrayDataStorageValue = common.Hex2Bytes("01")
 	updatedUintArrayDataStorageValue  = common.Hex2Bytes("03")
 
@@ -262,7 +262,7 @@ func TestBuilder(t *testing.T) {
 								Key:   storageSlotThreeKey,
 								Value: originalUintArrayDataStorageValue,
 								Proof: [][]byte{{227, 161, 32, 194, 87, 90, 14, 158, 89, 60, 0, 249, 89, 248, 201, 47, 18, 219, 40, 105, 195, 57, 90, 59, 5, 2, 208, 94, 37, 22, 68, 111, 113, 248, 91, 1}},
-								Path: []byte{12, 2, 5, 7, 5, 10, 0, 14, 9, 14, 5, 9, 3, 12, 0, 0, 15, 9, 5, 9, 15, 8, 12, 9, 2, 15, 1, 2, 13, 11, 2, 8, 6, 9, 12, 3, 3, 9, 5, 10, 3, 11, 0, 5, 0, 2, 13, 0, 5, 14, 2, 5, 1, 6, 4, 4, 6, 15, 7, 1, 15, 8, 5, 11, 16},
+								Path:  []byte{12, 2, 5, 7, 5, 10, 0, 14, 9, 14, 5, 9, 3, 12, 0, 0, 15, 9, 5, 9, 15, 8, 12, 9, 2, 15, 1, 2, 13, 11, 2, 8, 6, 9, 12, 3, 3, 9, 5, 10, 3, 11, 0, 5, 0, 2, 13, 0, 5, 14, 2, 5, 1, 6, 4, 4, 6, 15, 7, 1, 15, 8, 5, 11, 16},
 							},
 						},
 					},
@@ -503,7 +503,7 @@ func TestBuilderWithWatchedAddressList(t *testing.T) {
 								Key:   storageSlotThreeKey,
 								Value: originalUintArrayDataStorageValue,
 								Proof: [][]byte{{227, 161, 32, 194, 87, 90, 14, 158, 89, 60, 0, 249, 89, 248, 201, 47, 18, 219, 40, 105, 195, 57, 90, 59, 5, 2, 208, 94, 37, 22, 68, 111, 113, 248, 91, 1}},
-								Path: []byte{12, 2, 5, 7, 5, 10, 0, 14, 9, 14, 5, 9, 3, 12, 0, 0, 15, 9, 5, 9, 15, 8, 12, 9, 2, 15, 1, 2, 13, 11, 2, 8, 6, 9, 12, 3, 3, 9, 5, 10, 3, 11, 0, 5, 0, 2, 13, 0, 5, 14, 2, 5, 1, 6, 4, 4, 6, 15, 7, 1, 15, 8, 5, 11, 16},
+								Path:  []byte{12, 2, 5, 7, 5, 10, 0, 14, 9, 14, 5, 9, 3, 12, 0, 0, 15, 9, 5, 9, 15, 8, 12, 9, 2, 15, 1, 2, 13, 11, 2, 8, 6, 9, 12, 3, 3, 9, 5, 10, 3, 11, 0, 5, 0, 2, 13, 0, 5, 14, 2, 5, 1, 6, 4, 4, 6, 15, 7, 1, 15, 8, 5, 11, 16},
 							},
 						},
 					},
@@ -613,8 +613,8 @@ func calculateTestStructStorageKey() common.Hash {
 	mappingKeyBytes := []byte{1}
 	indexInContract := "0000000000000000000000000000000000000000000000000000000000000001"
 	leftPaddedBytes := common.LeftPadBytes(mappingKeyBytes, 32)
-	hexKey          := common.Bytes2Hex(leftPaddedBytes)
-	keyBytes        := common.FromHex(hexKey + indexInContract)
+	hexKey := common.Bytes2Hex(leftPaddedBytes)
+	keyBytes := common.FromHex(hexKey + indexInContract)
 
 	return crypto.Keccak256Hash(keyBytes)
 }
@@ -646,4 +646,3 @@ contract TestContract {
   }
 }
 */
-
