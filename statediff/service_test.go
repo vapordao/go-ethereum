@@ -27,7 +27,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethereum/go-ethereum/statediff"
 	"github.com/ethereum/go-ethereum/statediff/testhelpers/mocks"
@@ -84,7 +83,6 @@ func testErrorInChainEventLoop(t *testing.T) {
 		BlockChain:    &blockChain,
 		QuitChan:      make(chan bool),
 		Subscriptions: make(map[rpc.ID]statediff.Subscription),
-		StreamBlock:   true,
 	}
 	payloadChan := make(chan statediff.Payload, 2)
 	quitChan := make(chan bool)
@@ -117,22 +115,6 @@ func testErrorInChainEventLoop(t *testing.T) {
 	if len(payloads) != 2 {
 		t.Error("Test failure:", t.Name())
 		t.Logf("Actual number of payloads does not equal expected.\nactual: %+v\nexpected: 3", len(payloads))
-	}
-
-	testReceipts1Rlp, err := rlp.EncodeToBytes(testReceipts1)
-	if err != nil {
-		t.Error(err)
-	}
-	testReceipts2Rlp, err := rlp.EncodeToBytes(testReceipts2)
-	if err != nil {
-		t.Error(err)
-	}
-	expectedReceiptsRlp := [][]byte{testReceipts1Rlp, testReceipts2Rlp, nil}
-	for i, payload := range payloads {
-		if !bytes.Equal(payload.ReceiptsRlp, expectedReceiptsRlp[i]) {
-			t.Error("Test failure:", t.Name())
-			t.Logf("Actual receipt rlp for payload %d does not equal expected.\nactual: %+v\nexpected: %+v", i, payload.ReceiptsRlp, expectedReceiptsRlp[i])
-		}
 	}
 
 	if !reflect.DeepEqual(builder.BlockHash, testBlock2.Hash()) {

@@ -761,10 +761,6 @@ var (
 		Name:  "statediff.pathsandproofs",
 		Usage: "Set to true to generate paths and proof sets for diffed state and storage trie leaf nodes",
 	}
-	StateDiffStreamBlock = cli.BoolFlag{
-		Name:  "statediff.streamblock",
-		Usage: "Set to true to stream the block data alongside state diff data in the same subscription payload",
-	}
 	StateDiffWatchedAddresses = cli.StringSliceFlag{
 		Name:  "statediff.watchedaddresses",
 		Usage: "If provided, state diffing process is restricted to these addresses",
@@ -1620,7 +1616,6 @@ func RegisterGraphQLService(stack *node.Node, endpoint string, cors, vhosts []st
 func RegisterStateDiffService(stack *node.Node, ctx *cli.Context) {
 	config := statediff.Config{
 		PathsAndProofs:    ctx.GlobalBool(StateDiffPathsAndProofs.Name),
-		StreamBlock:       ctx.GlobalBool(StateDiffStreamBlock.Name),
 		WatchedAddresses:  ctx.GlobalStringSlice(StateDiffWatchedAddresses.Name),
 	}
 	if err := stack.Register(func(ctx *node.ServiceContext) (node.Service, error) {

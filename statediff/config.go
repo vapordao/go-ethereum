@@ -19,6 +19,5 @@ package statediff
 // Config is used to carry in parameters from CLI configuration
 type Config struct {
 	PathsAndProofs    bool
-	StreamBlock       bool
 	WatchedAddresses  []string
 }

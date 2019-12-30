@@ -17,7 +17,6 @@
 package mocks
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"sync"
@@ -42,7 +41,6 @@ type MockStateDiffService struct {
 	ParentBlockChan chan *types.Block
 	QuitChan        chan bool
 	Subscriptions   map[rpc.ID]statediff.Subscription
-	streamBlock     bool
 }
 
 // Protocols mock method
@@ -102,13 +100,6 @@ func (sds *MockStateDiffService) process(currentBlock, parentBlock *types.Block)
 	}
 	payload := statediff.Payload{
 		StateDiffRlp: stateDiffRlp,
-	}
-	if sds.streamBlock {
-		rlpBuff := new(bytes.Buffer)
-		if err = currentBlock.EncodeRLP(rlpBuff); err != nil {
-			return err
-		}
-		payload.BlockRlp = rlpBuff.Bytes()
 	}
 
 	// If we have any websocket subscription listening in, send the data to them

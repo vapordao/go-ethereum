@@ -69,8 +69,6 @@ type Service struct {
 	Subscriptions map[rpc.ID]Subscription
 	// Cache the last block so that we can avoid having to lookup the next block's parent
 	lastBlock *types.Block
-	// Whether or not the block data is streamed alongside the state diff data in the subscription payload
-	StreamBlock bool
 	// Whether or not we have any subscribers; only if we do, do we processes state diffs
 	subscribers int32
 }
@@ -83,7 +81,6 @@ func NewStateDiffService(db ethdb.Database, blockChain *core.BlockChain, config 
 		Builder:       NewBuilder(db, blockChain, config),
 		QuitChan:      make(chan bool),
 		Subscriptions: make(map[rpc.ID]Subscription),
-		StreamBlock:   config.StreamBlock,
 	}, nil
 }
 
@@ -159,19 +156,6 @@ func (sds *Service) processStateDiff(currentBlock, parentBlock *types.Block) err
 	}
 	payload := Payload{
 		StateDiffRlp: stateDiffRlp,
-	}
-	if sds.StreamBlock {
-		blockBuff := new(bytes.Buffer)
-		if err = currentBlock.EncodeRLP(blockBuff); err != nil {
-			return err
-		}
-		payload.BlockRlp = blockBuff.Bytes()
-		receiptBuff := new(bytes.Buffer)
-		receipts := sds.BlockChain.GetReceiptsByHash(currentBlock.Hash())
-		if err = rlp.Encode(receiptBuff, receipts); err != nil {
-			return err
-		}
-		payload.ReceiptsRlp = receiptBuff.Bytes()
 	}
 
 	sds.send(payload)

@@ -147,7 +147,6 @@ var (
 		utils.EVMInterpreterFlag,
 		utils.StateDiffFlag,
 		utils.StateDiffPathsAndProofs,
-		utils.StateDiffStreamBlock,
 		utils.StateDiffWatchedAddresses,
 		configFileFlag,
 	}

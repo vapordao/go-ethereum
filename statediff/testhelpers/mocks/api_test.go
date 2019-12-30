@@ -74,7 +74,6 @@ func TestAPI(t *testing.T) {
 		ParentBlockChan: parentBlockChain,
 		QuitChan:        serviceQuitChan,
 		Subscriptions:   make(map[rpc.ID]statediff.Subscription),
-		streamBlock:     true,
 	}
 	mockService.Start(nil)
 	id := rpc.NewID()
