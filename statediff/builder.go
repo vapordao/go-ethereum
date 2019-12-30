@@ -152,14 +152,6 @@ func (sdb *builder) collectDiffNodes(a, b trie.NodeIterator) (AccountsMap, error
 				RawKey:   leafKey,
 				RawValue: leafValue,
 			}
-			if sdb.config.PathsAndProofs {
-				leafProof := make([][]byte, len(it.LeafProof()))
-				copy(leafProof, it.LeafProof())
-				leafPath := make([]byte, len(it.Path()))
-				copy(leafPath, it.Path())
-				aw.Proof = leafProof
-				aw.Path = leafPath
-			}
 			// record account to diffs (creation if we are looking at new - old; deletion if old - new)
 			log.Debug("Account lookup successful", "address", leafKeyHash, "account", account)
 			diffAccounts[leafKeyHash] = aw
@@ -274,14 +266,6 @@ func (sdb *builder) buildStorageDiffsFromTrie(it trie.NodeIterator) ([]StorageDi
 				Leaf:  true,
 				Key:   leafKey,
 				Value: leafValue,
-			}
-			if sdb.config.PathsAndProofs {
-				leafProof := make([][]byte, len(it.LeafProof()))
-				copy(leafProof, it.LeafProof())
-				leafPath := make([]byte, len(it.Path()))
-				copy(leafPath, it.Path())
-				sd.Proof = leafProof
-				sd.Path = leafPath
 			}
 			storageDiffs = append(storageDiffs, sd)
 		}
