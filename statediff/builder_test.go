@@ -148,7 +148,6 @@ func TestBuilder(t *testing.T) {
 	block3 = blockMap[block3Hash]
 	config := statediff.Config{
 		PathsAndProofs:    true,
-		IntermediateNodes: false,
 	}
 	builder = statediff.NewBuilder(testhelpers.Testdb, chain, config)
 
@@ -382,7 +381,6 @@ func TestBuilderWithWatchedAddressList(t *testing.T) {
 	block3 = blockMap[block3Hash]
 	config := statediff.Config{
 		PathsAndProofs:    true,
-		IntermediateNodes: false,
 		WatchedAddresses:  []string{testhelpers.Account1Addr.Hex(), testhelpers.ContractAddr.Hex()},
 	}
 	builder = statediff.NewBuilder(testhelpers.Testdb, chain, config)

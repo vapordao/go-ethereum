@@ -66,7 +66,6 @@ func TestAPI(t *testing.T) {
 	serviceQuitChan := make(chan bool)
 	config := statediff.Config{
 		PathsAndProofs:    true,
-		IntermediateNodes: false,
 	}
 	mockService := MockStateDiffService{
 		Mutex:           sync.Mutex{},

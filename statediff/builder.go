@@ -163,19 +163,6 @@ func (sdb *builder) collectDiffNodes(a, b trie.NodeIterator) (AccountsMap, error
 			// record account to diffs (creation if we are looking at new - old; deletion if old - new)
 			log.Debug("Account lookup successful", "address", leafKeyHash, "account", account)
 			diffAccounts[leafKeyHash] = aw
-		} else if sdb.config.IntermediateNodes && !bytes.Equal(nullNode, it.Hash().Bytes()) {
-			nodeKey := it.Hash()
-			node, err := sdb.stateCache.TrieDB().Node(nodeKey)
-			if err != nil {
-				return nil, fmt.Errorf("error looking up intermediate state trie node %s\r\nerror: %v", nodeKey.Hex(), err)
-			}
-			aw := accountWrapper{
-				Leaf:     false,
-				RawKey:   nodeKey.Bytes(),
-				RawValue: node,
-			}
-			log.Debug("intermediate state trie node lookup successful", "key", nodeKey.Hex(), "value", node)
-			diffAccounts[nodeKey] = aw
 		}
 		cont := it.Next(true)
 		if !cont {
@@ -297,18 +284,6 @@ func (sdb *builder) buildStorageDiffsFromTrie(it trie.NodeIterator) ([]StorageDi
 				sd.Path = leafPath
 			}
 			storageDiffs = append(storageDiffs, sd)
-		} else if sdb.config.IntermediateNodes && !bytes.Equal(nullNode, it.Hash().Bytes()) {
-			nodeKey := it.Hash()
-			node, err := sdb.stateCache.TrieDB().Node(nodeKey)
-			if err != nil {
-				return nil, fmt.Errorf("error looking up intermediate storage trie node %s\r\nerror: %v", nodeKey.Hex(), err)
-			}
-			storageDiffs = append(storageDiffs, StorageDiff{
-				Leaf:  false,
-				Key:   nodeKey.Bytes(),
-				Value: node,
-			})
-			log.Debug("intermediate storage trie node lookup successful", "key", nodeKey.Hex(), "value", node)
 		}
 		cont := it.Next(true)
 		if !cont {

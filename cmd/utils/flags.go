@@ -761,10 +761,6 @@ var (
 		Name:  "statediff.pathsandproofs",
 		Usage: "Set to true to generate paths and proof sets for diffed state and storage trie leaf nodes",
 	}
-	StateDiffIntermediateNodes = cli.BoolFlag{
-		Name:  "statediff.intermediatenodes",
-		Usage: "Set to include intermediate (branch and extension) nodes; default (false) processes leaf nodes only",
-	}
 	StateDiffStreamBlock = cli.BoolFlag{
 		Name:  "statediff.streamblock",
 		Usage: "Set to true to stream the block data alongside state diff data in the same subscription payload",
@@ -1624,7 +1620,6 @@ func RegisterGraphQLService(stack *node.Node, endpoint string, cors, vhosts []st
 func RegisterStateDiffService(stack *node.Node, ctx *cli.Context) {
 	config := statediff.Config{
 		PathsAndProofs:    ctx.GlobalBool(StateDiffPathsAndProofs.Name),
-		IntermediateNodes: ctx.GlobalBool(StateDiffIntermediateNodes.Name),
 		StreamBlock:       ctx.GlobalBool(StateDiffStreamBlock.Name),
 		WatchedAddresses:  ctx.GlobalStringSlice(StateDiffWatchedAddresses.Name),
 	}
