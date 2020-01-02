@@ -36,9 +36,6 @@ type BlockChain struct {
 	Receipts             map[common.Hash]types.Receipts
 }
 
-// AddToStateDiffProcessedCollection mock method
-func (blockChain *BlockChain) AddToStateDiffProcessedCollection(hash common.Hash) {}
-
 // SetParentBlocksToReturn mock method
 func (blockChain *BlockChain) SetParentBlocksToReturn(blocks map[common.Hash]*types.Block) {
 	if blockChain.parentBlocksToReturn == nil {
