@@ -38,6 +38,7 @@ const chainEventChanSize = 20000
 
 type blockChain interface {
 	SubscribeChainEvent(ch chan<- core.ChainEvent) event.Subscription
+	SubscribePrecommitedChainEvent(ch chan<- core.PrecommitedChainEvent) event.Subscription
 	GetBlockByHash(hash common.Hash) *types.Block
 	GetReceiptsByHash(hash common.Hash) types.Receipts
 }
@@ -47,7 +48,7 @@ type IService interface {
 	// APIs(), Protocols(), Start() and Stop()
 	node.Service
 	// Main event loop for processing state diffs
-	Loop(chainEventCh chan core.ChainEvent)
+	Loop(chainEventCh chan core.PrecommitedChainEvent)
 	// Method to subscribe to receive state diff processing output
 	Subscribe(id rpc.ID, sub chan<- Payload, quitChan chan<- bool)
 	// Method to unsubscribe from state diff processing
@@ -101,15 +102,15 @@ func (sds *Service) APIs() []rpc.API {
 }
 
 // Loop is the main processing method
-func (sds *Service) Loop(chainEventCh chan core.ChainEvent) {
-	chainEventSub := sds.BlockChain.SubscribeChainEvent(chainEventCh)
-	defer chainEventSub.Unsubscribe()
-	errCh := chainEventSub.Err()
+func (sds *Service) Loop(chainEventCh chan core.PrecommitedChainEvent) {
+	precommitedChainEventSub := sds.BlockChain.SubscribePrecommitedChainEvent(chainEventCh)
+	defer precommitedChainEventSub.Unsubscribe()
+	errCh := precommitedChainEventSub.Err()
 	for {
 		select {
 		//Notify chain event channel of events
 		case chainEvent := <-chainEventCh:
-			log.Debug("Event received from chainEventCh", "event", chainEvent)
+			log.Info("Event received from chainEventCh", "event", chainEvent)
 			// if we don't have any subscribers, do not process a statediff
 			if atomic.LoadInt32(&sds.subscribers) == 0 {
 				log.Debug("Currently no subscribers to the statediffing service; processing is halted")
@@ -197,7 +198,7 @@ func (sds *Service) Unsubscribe(id rpc.ID) error {
 func (sds *Service) Start(*p2p.Server) error {
 	log.Info("Starting statediff service")
 
-	chainEventCh := make(chan core.ChainEvent, chainEventChanSize)
+	chainEventCh := make(chan core.PrecommitedChainEvent, chainEventChanSize)
 	go sds.Loop(chainEventCh)
 
 	return nil

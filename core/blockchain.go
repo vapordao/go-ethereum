@@ -144,6 +144,7 @@ type BlockChain struct {
 	chainFeed     event.Feed
 	chainSideFeed event.Feed
 	chainHeadFeed event.Feed
+	precommitedChainFeed event.Feed //TODO: this is temporary, hoping to instead have this feed be for diffs
 	logsFeed      event.Feed
 	blockProcFeed event.Feed
 	scope         event.SubscriptionScope
@@ -1294,6 +1295,22 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	}
 	triedb := bc.stateCache.TrieDB()
 
+	log.Info("About to send the block to the precommitted chain feed, block number:", block.Number())
+
+	bc.precommitedChainFeed.Send(PrecommitedChainEvent{Block: block, Hash: block.Hash()})
+	// TODO elizabeth note:
+	//MAYBE PUT A NEW SUBSCRIPTION IN HERE AND PUSH THE STATE ON THE SUB HERE?
+	//is this earlier enough in the process that the state won't be garbage collected?
+	// is it okay to send the block to the statediff service here even if it may not be canonical? from VDB's perspective, this should be
+	// fine since we're checking the diff hashes... but that's probably not a great user interface for other users - which would also require the hash of the diffs to be
+	// validated
+
+	//i think that by sending the block here rather than on line 1408 we are sending it before it is validated
+	//but perhaps we're also able to send it before the trie is pruned - if this is the case, then it may be worth it. if
+	// things are pruned before we can get to them even her, it's not worth it
+
+	// it seems like it may still have the potential to be pruned too early?
+
 	// If we're running an archive node, always flush
 	if bc.cacheConfig.TrieDirtyDisabled {
 		if err := triedb.Commit(root, false); err != nil {
@@ -2228,4 +2245,8 @@ func (bc *BlockChain) SubscribeLogsEvent(ch chan<- []*types.Log) event.Subscript
 // block processing has started while false means it has stopped.
 func (bc *BlockChain) SubscribeBlockProcessingEvent(ch chan<- bool) event.Subscription {
 	return bc.scope.Track(bc.blockProcFeed.Subscribe(ch))
+}
+
+func (bc *BlockChain) SubscribePrecommitedChainEvent(ch chan<- PrecommitedChainEvent) event.Subscription {
+	return bc.scope.Track(bc.precommitedChainFeed.Subscribe(ch))
 }

@@ -61,7 +61,7 @@ func (sds *MockStateDiffService) APIs() []rpc.API {
 }
 
 // Loop mock method
-func (sds *MockStateDiffService) Loop(chan core.ChainEvent) {
+func (sds *MockStateDiffService) Loop(chan core.PrecommitedChainEvent) {
 	//loop through chain events until no more
 	for {
 		select {
