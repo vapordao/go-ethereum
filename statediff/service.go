@@ -39,7 +39,6 @@ const chainEventChanSize = 20000
 
 type blockChain interface {
 	SubscribeChainEvent(ch chan<- core.ChainEvent) event.Subscription
-	SubscribePrecommitedChainEvent(ch chan<- core.PrecommitedChainEvent) event.Subscription
 	SubscribeStateChangeEvents(ch chan<- core.StateChangeEvent) event.Subscription
 	GetBlockByHash(hash common.Hash) *types.Block
 	GetReceiptsByHash(hash common.Hash) types.Receipts

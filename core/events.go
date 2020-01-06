@@ -42,11 +42,6 @@ type ChainEvent struct {
 	Logs  []*types.Log
 }
 
-type PrecommitedChainEvent struct {
-	Block *types.Block
-	Hash  common.Hash
-}
-
 type StateChangeEvent struct {
 	ModifiedAccounts state.StateChanges
 }
