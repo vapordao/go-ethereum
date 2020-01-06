@@ -139,16 +139,17 @@ type BlockChain struct {
 	triegc *prque.Prque   // Priority queue mapping block numbers to tries to gc
 	gcproc time.Duration  // Accumulates canonical block processing for trie dumping
 
-	hc            *HeaderChain
-	rmLogsFeed    event.Feed
-	chainFeed     event.Feed
-	chainSideFeed event.Feed
-	chainHeadFeed event.Feed
+	hc                   *HeaderChain
+	rmLogsFeed           event.Feed
+	chainFeed            event.Feed
+	chainSideFeed        event.Feed
+	chainHeadFeed        event.Feed
 	precommitedChainFeed event.Feed //TODO: this is temporary, hoping to instead have this feed be for diffs
-	logsFeed      event.Feed
-	blockProcFeed event.Feed
-	scope         event.SubscriptionScope
-	genesisBlock  *types.Block
+	modifiedAccountsFeed event.Feed
+	logsFeed             event.Feed
+	blockProcFeed        event.Feed
+	scope                event.SubscriptionScope
+	genesisBlock         *types.Block
 
 	chainmu sync.RWMutex // blockchain insertion lock
 
@@ -1290,14 +1291,16 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	rawdb.WriteBlock(bc.db, block)
 
 	root, modifiedAccounts, err := state.Commit(bc.chainConfig.IsEIP158(block.Number()))
-	//NEED TO PUT THESE IN A FEED
-	fmt.Println(modifiedAccounts)
+	modifiedAccounts.Block = block
+	log.Info("Sending modifiedAccounts to the modifiedAccountsFeed", "block number", block.Number(), "count", len(modifiedAccounts.ModifiedAccounts))
+	bc.modifiedAccountsFeed.Send(StateChangeEvent{modifiedAccounts})
+
 	if err != nil {
 		return NonStatTy, err
 	}
 	triedb := bc.stateCache.TrieDB()
 
-	log.Info("About to send the block to the precommitted chain feed, block number:", block.Number())
+	log.Info("About to send the block to the precommitted chain feed, block number:", "block number", block.Number())
 
 	bc.precommitedChainFeed.Send(PrecommitedChainEvent{Block: block, Hash: block.Hash()})
 	// TODO elizabeth note:
@@ -2251,4 +2254,8 @@ func (bc *BlockChain) SubscribeBlockProcessingEvent(ch chan<- bool) event.Subscr
 
 func (bc *BlockChain) SubscribePrecommitedChainEvent(ch chan<- PrecommitedChainEvent) event.Subscription {
 	return bc.scope.Track(bc.precommitedChainFeed.Subscribe(ch))
+}
+
+func (bc *BlockChain) SubscribeStateChangeEvents(ch chan<- StateChangeEvent) event.Subscription {
+	return bc.scope.Track(bc.modifiedAccountsFeed.Subscribe(ch))
 }

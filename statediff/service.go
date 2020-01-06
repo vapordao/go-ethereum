@@ -24,6 +24,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
@@ -39,6 +40,7 @@ const chainEventChanSize = 20000
 type blockChain interface {
 	SubscribeChainEvent(ch chan<- core.ChainEvent) event.Subscription
 	SubscribePrecommitedChainEvent(ch chan<- core.PrecommitedChainEvent) event.Subscription
+	SubscribeStateChangeEvents(ch chan<- core.StateChangeEvent) event.Subscription
 	GetBlockByHash(hash common.Hash) *types.Block
 	GetReceiptsByHash(hash common.Hash) types.Receipts
 }
@@ -48,7 +50,7 @@ type IService interface {
 	// APIs(), Protocols(), Start() and Stop()
 	node.Service
 	// Main event loop for processing state diffs
-	Loop(chainEventCh chan core.PrecommitedChainEvent)
+	Loop(chainEventCh chan core.ChainEvent, stateChangeEventCh chan core.StateChangeEvent)
 	// Method to subscribe to receive state diff processing output
 	Subscribe(id rpc.ID, sub chan<- Payload, quitChan chan<- bool)
 	// Method to unsubscribe from state diff processing
@@ -102,12 +104,21 @@ func (sds *Service) APIs() []rpc.API {
 }
 
 // Loop is the main processing method
-func (sds *Service) Loop(chainEventCh chan core.PrecommitedChainEvent) {
-	precommitedChainEventSub := sds.BlockChain.SubscribePrecommitedChainEvent(chainEventCh)
-	defer precommitedChainEventSub.Unsubscribe()
-	errCh := precommitedChainEventSub.Err()
+func (sds *Service) Loop(chainEventCh chan core.ChainEvent, stateChangeEventCh chan core.StateChangeEvent) {
+	stateChangeEventsSub := sds.BlockChain.SubscribeStateChangeEvents(stateChangeEventCh)
+	chainEventSub := sds.BlockChain.SubscribeChainEvent(chainEventCh)
+	defer stateChangeEventsSub.Unsubscribe()
+	defer chainEventSub.Unsubscribe()
+
+	errCh := chainEventSub.Err()
 	for {
 		select {
+		case stateChangeEvent := <-stateChangeEventCh:
+			log.Info("Event received from stateChangeEventCh", "event", stateChangeEvent)
+			processingStateChangeError := sds.processStateChanges(stateChangeEvent.ModifiedAccounts)
+			if processingStateChangeError != nil {
+				log.Error("ERROR")
+			}
 		//Notify chain event channel of events
 		case chainEvent := <-chainEventCh:
 			log.Info("Event received from chainEventCh", "event", chainEvent)
@@ -162,6 +173,58 @@ func (sds *Service) processStateDiff(currentBlock, parentBlock *types.Block) err
 	return nil
 }
 
+func (sds *Service) processStateChanges(stateChanges state.StateChanges) error {
+	var accountDiffs []AccountDiff
+	for addr, modifiedAccount := range stateChanges.ModifiedAccounts {
+		//TODO: perhaps the AccountDiff struct should change such that the Value is
+		// actually an Account instead of changing it to a byte array here and then
+		// needing to change it back to an Account later
+
+
+		//TODO: Also change AccountDiff.Storage to just a map instead of an array of StorageDiffs?
+		accountBytes, err := rlp.EncodeToBytes(modifiedAccount.Account)
+		if err != nil {
+			return err
+		}
+
+		var storageDiffs []StorageDiff
+		for k, v := range modifiedAccount.Storage {
+			diff := StorageDiff{
+				Key:   k[:],
+				Value: v[:],
+			}
+			storageDiffs = append(storageDiffs, diff)
+		}
+
+		accountDiff := AccountDiff{
+			Key:     addr[:],
+			Value:   accountBytes,
+			Storage: storageDiffs,
+		}
+
+		accountDiffs = append(accountDiffs, accountDiff)
+	}
+
+	stateDiff := StateDiff{
+		BlockNumber:     stateChanges.Block.Number(),
+		BlockHash:       stateChanges.Block.Hash(),
+		UpdatedAccounts: accountDiffs,
+		encoded:         nil,
+		err:             nil,
+	}
+
+	stateDiffRlp, err := rlp.EncodeToBytes(stateDiff)
+	if err != nil {
+		return err
+	}
+	payload := Payload{
+		StateDiffRlp: stateDiffRlp,
+	}
+
+	sds.send(payload)
+	return nil
+}
+
 // Subscribe is used by the API to subscribe to the service loop
 func (sds *Service) Subscribe(id rpc.ID, sub chan<- Payload, quitChan chan<- bool) {
 	log.Info("Subscribing to the statediff service")
@@ -198,8 +261,9 @@ func (sds *Service) Unsubscribe(id rpc.ID) error {
 func (sds *Service) Start(*p2p.Server) error {
 	log.Info("Starting statediff service")
 
-	chainEventCh := make(chan core.PrecommitedChainEvent, chainEventChanSize)
-	go sds.Loop(chainEventCh)
+	chainEventCh := make(chan core.ChainEvent, chainEventChanSize)
+	stateChangeEventCh := make(chan core.StateChangeEvent, chainEventChanSize)
+	go sds.Loop(chainEventCh, stateChangeEventCh)
 
 	return nil
 }

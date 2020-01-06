@@ -47,8 +47,8 @@ type PrecommitedChainEvent struct {
 	Hash  common.Hash
 }
 
-type ModfiedAccountsEvent struct {
-	ModifiedAccounts state.ModifiedAccounts
+type StateChangeEvent struct {
+	ModifiedAccounts state.StateChanges
 }
 
 type ChainSideEvent struct {

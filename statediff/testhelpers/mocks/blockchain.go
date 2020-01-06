@@ -33,6 +33,7 @@ type BlockChain struct {
 	parentBlocksToReturn map[common.Hash]*types.Block
 	callCount            int
 	ChainEvents          []core.ChainEvent
+	StateChangeEvents    []core.StateChangeEvent
 	Receipts             map[common.Hash]types.Receipts
 }
 
@@ -54,6 +55,29 @@ func (blockChain *BlockChain) GetBlockByHash(hash common.Hash) *types.Block {
 	}
 
 	return parentBlock
+}
+
+func (blockChain *BlockChain) SubscribeStateChangeEvents(ch chan<- core.StateChangeEvent) event.Subscription {
+	subErr := errors.New("Subscription Error")
+
+	var eventCounter int
+	subscription := event.NewSubscription(func(quit <-chan struct{}) error {
+		for _, stateChangeEvent := range blockChain.StateChangeEvents {
+			if eventCounter > 1 {
+				time.Sleep(250 * time.Millisecond)
+				return subErr
+			}
+			select {
+			case ch <- stateChangeEvent:
+			case <-quit:
+				return nil
+			}
+			eventCounter++
+		}
+		return nil
+	})
+
+	return subscription
 }
 
 // SetChainEvents mock method

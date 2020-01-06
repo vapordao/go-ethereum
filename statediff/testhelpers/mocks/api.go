@@ -61,7 +61,7 @@ func (sds *MockStateDiffService) APIs() []rpc.API {
 }
 
 // Loop mock method
-func (sds *MockStateDiffService) Loop(chan core.PrecommitedChainEvent) {
+func (sds *MockStateDiffService) Loop(chan core.ChainEvent, chan core.StateChangeEvent) {
 	//loop through chain events until no more
 	for {
 		select {
@@ -165,7 +165,8 @@ func (sds *MockStateDiffService) Start(server *p2p.Server) error {
 		return errors.New("MockStateDiffingService needs to be configured with a MockParentBlockChan and MockBlockChan")
 	}
 	chainEventCh := make(chan core.ChainEvent, 10)
-	go sds.Loop(chainEventCh)
+	stateChangeEventsCh := make(chan core.StateChangeEvent, 10)
+	go sds.Loop(chainEventCh, stateChangeEventsCh)
 
 	return nil
 }

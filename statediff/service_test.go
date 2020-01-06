@@ -39,6 +39,7 @@ func TestServiceLoop(t *testing.T) {
 
 var (
 	eventsChannel = make(chan core.ChainEvent, 1)
+	stateChangeEventCh = make(chan core.StateChangeEvent, 1)
 
 	parentRoot1   = common.HexToHash("0x01")
 	parentRoot2   = common.HexToHash("0x02")
@@ -110,7 +111,7 @@ func testErrorInChainEventLoop(t *testing.T) {
 		wg.Done()
 	}()
 
-	service.Loop(eventsChannel)
+	service.Loop(eventsChannel, stateChangeEventCh)
 	wg.Wait()
 	if len(payloads) != 2 {
 		t.Error("Test failure:", t.Name())
@@ -161,7 +162,7 @@ func testErrorInBlockLoop(t *testing.T) {
 		case <-quitChan:
 		}
 	}()
-	service.Loop(eventsChannel)
+	service.Loop(eventsChannel, stateChangeEventCh)
 
 	if !bytes.Equal(builder.BlockHash.Bytes(), testBlock1.Hash().Bytes()) {
 		t.Error("Test failure:", t.Name())

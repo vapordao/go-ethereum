@@ -728,21 +728,25 @@ type ModifiedAccount struct {
 	Account
 	Storage
 }
-type ModifiedAccounts map[common.Address]ModifiedAccount
+type StateChanges struct {
+	ModifiedAccounts map[common.Address]ModifiedAccount
+	Block            *types.Block
+}
 
 // Commit writes the state to the underlying in-memory trie database.
-func (s *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, ModifiedAccounts, error) {
+func (s *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, StateChanges, error) {
 	// Finalize any pending changes and merge everything into the tries
 	s.IntermediateRoot(deleteEmptyObjects)
 
-	modifiedAccounts := make(ModifiedAccounts)
+	modifiedAccounts := StateChanges{
+		ModifiedAccounts: make(map[common.Address]ModifiedAccount),
+		Block:            nil,
+	}
 
 	// Commit objects to the trie, measuring the elapsed time
 	for addr := range s.stateObjectsDirty {
 		dirtyStateObject := s.stateObjects[addr]
-		modifiedAccount := ModifiedAccount{
-			Account: dirtyStateObject.data, //this is an account
-		}
+		modifiedAccount := ModifiedAccount{Account: dirtyStateObject.data} //state_object.data is the account
 
 		if obj := s.stateObjects[addr]; !obj.deleted {
 			// Write any contract code associated with the state object
@@ -756,11 +760,11 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, ModifiedAccounts
 
 			// Write any storage changes in the state object to its storage trie
 			if err := obj.CommitTrie(s.db); err != nil {
-				return common.Hash{}, ModifiedAccounts{}, err
+				return common.Hash{}, StateChanges{}, err
 			}
 		}
 
-		modifiedAccounts[addr] = modifiedAccount
+		modifiedAccounts.ModifiedAccounts[addr] = modifiedAccount
 	}
 
 	if len(s.stateObjectsDirty) > 0 {
