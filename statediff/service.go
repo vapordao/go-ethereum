@@ -133,7 +133,6 @@ func (sds *Service) processStateChanges(stateChangeEvent core.StateChangeEvent) 
 		// actually an Account instead of changing it to a byte array here and then
 		// needing to change it back to an Account later
 
-
 		//TODO: Also change AccountDiff.Storage to just a map instead of an array of StorageDiffs?
 		accountBytes, err := rlp.EncodeToBytes(modifiedAccount.Account)
 		if err != nil {

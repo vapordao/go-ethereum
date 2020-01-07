@@ -44,10 +44,10 @@ var (
 	testBlock3 = types.NewBlock(&types.Header{}, nil, nil, nil)
 
 	account1Address = common.HexToAddress("0x1")
-	accountBlock1 = state.Account{
-		Nonce:    0,
-		Balance:  big.NewInt(100),
-		Root:     common.HexToHash("0x01"),
+	accountBlock1   = state.Account{
+		Nonce:   0,
+		Balance: big.NewInt(100),
+		Root:    common.HexToHash("0x01"),
 	}
 	modifiedAccount1 = state.ModifiedAccount{
 		Account: accountBlock1,
@@ -55,19 +55,19 @@ var (
 	}
 
 	event1 = core.StateChangeEvent{
-		Block:            testBlock1,
+		Block: testBlock1,
 		StateChanges: state.StateChanges{
 			ModifiedAccounts: map[common.Address]state.ModifiedAccount{account1Address: modifiedAccount1},
 		},
 	}
 	event2 = core.StateChangeEvent{
-		Block:            testBlock2,
+		Block: testBlock2,
 		StateChanges: state.StateChanges{
 			ModifiedAccounts: nil,
 		},
 	}
 	event3 = core.StateChangeEvent{
-		Block:            testBlock3,
+		Block: testBlock3,
 		StateChanges: state.StateChanges{
 			ModifiedAccounts: nil,
 		},
@@ -108,7 +108,7 @@ func testErrorInStateChangeEventLoop(t *testing.T) {
 		t.Logf("Actual number of payloads does not equal expected.\nactual: %+v\nexpected: 2", len(payloads))
 	}
 
-	accountBlock1Bytes, err  := rlp.EncodeToBytes(accountBlock1)
+	accountBlock1Bytes, err := rlp.EncodeToBytes(accountBlock1)
 	if err != nil {
 		t.Error("Test failure:", t.Name())
 		t.Logf("Failed to encode state diff to bytes")
@@ -131,7 +131,7 @@ func testErrorInStateChangeEventLoop(t *testing.T) {
 		t.Logf("Failed to encode state diff to bytes")
 	}
 
-	emptyStateDiffRlp := []byte{ 229, 128, 160, 177, 89, 160, 119, 252, 42, 247, 155, 154, 156, 116, 140, 156, 14, 80, 255, 149, 183, 76, 50, 148, 110, 213, 36, 24, 252, 192, 147, 208, 149, 63, 38, 192, 192, 192 }
+	emptyStateDiffRlp := []byte{229, 128, 160, 177, 89, 160, 119, 252, 42, 247, 155, 154, 156, 116, 140, 156, 14, 80, 255, 149, 183, 76, 50, 148, 110, 213, 36, 24, 252, 192, 147, 208, 149, 63, 38, 192, 192, 192}
 	expectedPayloads := []statediff.Payload{{
 		StateDiffRlp: expectedStateDiffRlp,
 	}, {StateDiffRlp: emptyStateDiffRlp}}

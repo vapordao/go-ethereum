@@ -18,5 +18,5 @@ package statediff
 
 // Config is used to carry in parameters from CLI configuration
 type Config struct {
-	WatchedAddresses  []string
+	WatchedAddresses []string
 }

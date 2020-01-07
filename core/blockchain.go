@@ -144,7 +144,7 @@ type BlockChain struct {
 	chainFeed            event.Feed
 	chainSideFeed        event.Feed
 	chainHeadFeed        event.Feed
-	modifiedAccountsFeed event.Feed
+	stateChangeEventFeed event.Feed
 	logsFeed             event.Feed
 	blockProcFeed        event.Feed
 	scope                event.SubscriptionScope
@@ -1289,13 +1289,14 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	}
 	rawdb.WriteBlock(bc.db, block)
 
-	root, modifiedAccounts, err := state.Commit(bc.chainConfig.IsEIP158(block.Number()))
-	log.Info("Sending modifiedAccounts to the modifiedAccountsFeed", "block number", block.Number(), "count", len(modifiedAccounts.ModifiedAccounts))
-	bc.modifiedAccountsFeed.Send(StateChangeEvent{block, modifiedAccounts})
+	root, modifiedAccounts, commitErr := state.Commit(bc.chainConfig.IsEIP158(block.Number()))
+	log.Info("Sending StateChangeEvent to the feed", "block number", block.Number(), "count", len(modifiedAccounts.ModifiedAccounts))
+	bc.stateChangeEventFeed.Send(StateChangeEvent{block, modifiedAccounts})
 
-	if err != nil {
-		return NonStatTy, err
+	if commitErr != nil {
+		return NonStatTy, commitErr
 	}
+
 	triedb := bc.stateCache.TrieDB()
 
 	// If we're running an archive node, always flush
@@ -2235,5 +2236,5 @@ func (bc *BlockChain) SubscribeBlockProcessingEvent(ch chan<- bool) event.Subscr
 }
 
 func (bc *BlockChain) SubscribeStateChangeEvents(ch chan<- StateChangeEvent) event.Subscription {
-	return bc.scope.Track(bc.modifiedAccountsFeed.Subscribe(ch))
+	return bc.scope.Track(bc.stateChangeEventFeed.Subscribe(ch))
 }
