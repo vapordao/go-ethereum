@@ -129,11 +129,6 @@ func (sds *Service) processStateChanges(stateChangeEvent core.StateChangeEvent) 
 	var accountDiffs []AccountDiff
 	modifiedAccounts := stateChangeEvent.StateChanges.ModifiedAccounts
 	for addr, modifiedAccount := range modifiedAccounts {
-		//TODO: perhaps the AccountDiff struct should change such that the Value is
-		// actually an Account instead of changing it to a byte array here and then
-		// needing to change it back to an Account later
-
-		//TODO: Also change AccountDiff.Storage to just a map instead of an array of StorageDiffs?
 		accountBytes, err := rlp.EncodeToBytes(modifiedAccount.Account)
 		if err != nil {
 			return err
@@ -148,13 +143,14 @@ func (sds *Service) processStateChanges(stateChangeEvent core.StateChangeEvent) 
 			storageDiffs = append(storageDiffs, diff)
 		}
 
-		accountDiff := AccountDiff{
-			Key:     addr[:],
+		address := addr
+		a := AccountDiff{
+			Key:     address[:],
 			Value:   accountBytes,
 			Storage: storageDiffs,
 		}
 
-		accountDiffs = append(accountDiffs, accountDiff)
+		accountDiffs = append(accountDiffs, a)
 	}
 
 	stateDiff := StateDiff{

@@ -43,35 +43,41 @@ var (
 	testBlock2 = types.NewBlock(&types.Header{}, nil, nil, nil)
 	testBlock3 = types.NewBlock(&types.Header{}, nil, nil, nil)
 
-	account1Address = common.HexToAddress("0x1")
-	accountBlock1   = state.Account{
+	testAccount1Address = common.HexToAddress("0x1")
+	testAccount1 = state.Account{
 		Nonce:   0,
 		Balance: big.NewInt(100),
 		Root:    common.HexToHash("0x01"),
 	}
 	modifiedAccount1 = state.ModifiedAccount{
-		Account: accountBlock1,
+		Account: testAccount1,
 		Storage: nil,
 	}
-
+	testAccount2Address = common.HexToAddress("0x2")
+	testAccount2 = state.Account{
+		Nonce:   0,
+		Balance: big.NewInt(200),
+		Root:    common.HexToHash("0x02"),
+	}
+	account2StorageKey =common.HexToHash("0x0002")
+	account2StorageValue = common.HexToHash("0x00002")
+	account2Storage = state.Storage{account2StorageKey: account2StorageValue}
+	modifiedAccount2 = state.ModifiedAccount{
+		Account: testAccount2,
+		Storage: account2Storage,
+	}
 	event1 = core.StateChangeEvent{
 		Block: testBlock1,
 		StateChanges: state.StateChanges{
-			ModifiedAccounts: map[common.Address]state.ModifiedAccount{account1Address: modifiedAccount1},
+			ModifiedAccounts: map[common.Address]state.ModifiedAccount{
+				testAccount1Address: modifiedAccount1,
+				testAccount2Address: modifiedAccount2,
+			},
 		},
 	}
-	event2 = core.StateChangeEvent{
-		Block: testBlock2,
-		StateChanges: state.StateChanges{
-			ModifiedAccounts: nil,
-		},
-	}
-	event3 = core.StateChangeEvent{
-		Block: testBlock3,
-		StateChanges: state.StateChanges{
-			ModifiedAccounts: nil,
-		},
-	}
+
+	event2 = core.StateChangeEvent{Block: testBlock2, StateChanges: state.StateChanges{}}
+	event3 = core.StateChangeEvent{Block: testBlock3, StateChanges: state.StateChanges{}}
 )
 
 func testErrorInStateChangeEventLoop(t *testing.T) {
@@ -108,21 +114,37 @@ func testErrorInStateChangeEventLoop(t *testing.T) {
 		t.Logf("Actual number of payloads does not equal expected.\nactual: %+v\nexpected: 2", len(payloads))
 	}
 
-	accountBlock1Bytes, err := rlp.EncodeToBytes(accountBlock1)
+	accountBlock1Bytes, err := rlp.EncodeToBytes(testAccount1)
 	if err != nil {
 		t.Error("Test failure:", t.Name())
 		t.Logf("Failed to encode state diff to bytes")
 	}
 
-	accountDiff := statediff.AccountDiff{
-		Key:     account1Address[:],
+	accountBlock2Bytes, err := rlp.EncodeToBytes(testAccount2)
+	if err != nil {
+		t.Error("Test failure:", t.Name())
+		t.Logf("Failed to encode state diff to bytes")
+	}
+
+	account1Diff := statediff.AccountDiff{
+		Key:     testAccount1Address[:],
 		Value:   accountBlock1Bytes,
 		Storage: nil,
+	}
+
+	account2StorageDiff := statediff.StorageDiff{
+		Key:   account2StorageKey[:],
+		Value: account2StorageValue[:],
+	}
+	account2Diff := statediff.AccountDiff{
+		Key:     testAccount2Address[:],
+		Value:   accountBlock2Bytes,
+		Storage: []statediff.StorageDiff{account2StorageDiff},
 	}
 	stateDiff := statediff.StateDiff{
 		BlockNumber:     testBlock1.Number(),
 		BlockHash:       testBlock1.Hash(),
-		UpdatedAccounts: []statediff.AccountDiff{accountDiff},
+		UpdatedAccounts: []statediff.AccountDiff{account1Diff, account2Diff},
 	}
 
 	expectedStateDiffRlp, err := rlp.EncodeToBytes(stateDiff)
@@ -132,9 +154,10 @@ func testErrorInStateChangeEventLoop(t *testing.T) {
 	}
 
 	emptyStateDiffRlp := []byte{229, 128, 160, 177, 89, 160, 119, 252, 42, 247, 155, 154, 156, 116, 140, 156, 14, 80, 255, 149, 183, 76, 50, 148, 110, 213, 36, 24, 252, 192, 147, 208, 149, 63, 38, 192, 192, 192}
-	expectedPayloads := []statediff.Payload{{
-		StateDiffRlp: expectedStateDiffRlp,
-	}, {StateDiffRlp: emptyStateDiffRlp}}
+	expectedPayloads := []statediff.Payload{
+		{StateDiffRlp: expectedStateDiffRlp},
+		{StateDiffRlp: emptyStateDiffRlp},
+	}
 	if !reflect.DeepEqual(payloads, expectedPayloads) {
 		t.Error("Test failure:", t.Name())
 		t.Logf("Actual payload equal expected.\nactual:%+v\nexpected: %+v", payloads, expectedPayloads)
