@@ -21,40 +21,14 @@ import (
 
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
 )
 
 // BlockChain is a mock blockchain for testing
 type BlockChain struct {
-	ParentHashesLookedUp []common.Hash
-	parentBlocksToReturn map[common.Hash]*types.Block
 	callCount            int
-	ChainEvents          []core.ChainEvent
 	StateChangeEvents    []core.StateChangeEvent
-	Receipts             map[common.Hash]types.Receipts
-}
-
-// SetParentBlocksToReturn mock method
-func (blockChain *BlockChain) SetParentBlocksToReturn(blocks map[common.Hash]*types.Block) {
-	if blockChain.parentBlocksToReturn == nil {
-		blockChain.parentBlocksToReturn = make(map[common.Hash]*types.Block)
-	}
-	blockChain.parentBlocksToReturn = blocks
-}
-
-// GetBlockByHash mock method
-func (blockChain *BlockChain) GetBlockByHash(hash common.Hash) *types.Block {
-	blockChain.ParentHashesLookedUp = append(blockChain.ParentHashesLookedUp, hash)
-
-	var parentBlock *types.Block
-	if len(blockChain.parentBlocksToReturn) > 0 {
-		parentBlock = blockChain.parentBlocksToReturn[hash]
-	}
-
-	return parentBlock
 }
 
 func (blockChain *BlockChain) SubscribeStateChangeEvents(ch chan<- core.StateChangeEvent) event.Subscription {
@@ -83,46 +57,4 @@ func (blockChain *BlockChain) SubscribeStateChangeEvents(ch chan<- core.StateCha
 // Mock method for setting StateChangeEvents to return
 func (blockChain *BlockChain) SetStateChangeEvents(stateChangeEvents []core.StateChangeEvent) {
 	blockChain.StateChangeEvents = stateChangeEvents
-}
-
-// SetChainEvents mock method
-func (blockChain *BlockChain) SetChainEvents(chainEvents []core.ChainEvent) {
-	blockChain.ChainEvents = chainEvents
-}
-
-// SubscribeChainEvent mock method
-func (blockChain *BlockChain) SubscribeChainEvent(ch chan<- core.ChainEvent) event.Subscription {
-	subErr := errors.New("Subscription Error")
-
-	var eventCounter int
-	subscription := event.NewSubscription(func(quit <-chan struct{}) error {
-		for _, chainEvent := range blockChain.ChainEvents {
-			if eventCounter > 1 {
-				time.Sleep(250 * time.Millisecond)
-				return subErr
-			}
-			select {
-			case ch <- chainEvent:
-			case <-quit:
-				return nil
-			}
-			eventCounter++
-		}
-		return nil
-	})
-
-	return subscription
-}
-
-// SetReceiptsForHash mock method
-func (blockChain *BlockChain) SetReceiptsForHash(hash common.Hash, receipts types.Receipts) {
-	if blockChain.Receipts == nil {
-		blockChain.Receipts = make(map[common.Hash]types.Receipts)
-	}
-	blockChain.Receipts[hash] = receipts
-}
-
-// GetReceiptsByHash mock method
-func (blockChain *BlockChain) GetReceiptsByHash(hash common.Hash) types.Receipts {
-	return blockChain.Receipts[hash]
 }

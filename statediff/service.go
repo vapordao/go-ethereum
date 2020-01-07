@@ -21,7 +21,6 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethdb"
@@ -37,8 +36,6 @@ const stateChangeEventChanSize = 20000
 
 type blockChain interface {
 	SubscribeStateChangeEvents(ch chan<- core.StateChangeEvent) event.Subscription
-	GetBlockByHash(hash common.Hash) *types.Block
-	GetReceiptsByHash(hash common.Hash) types.Receipts
 }
 
 // IService is the state-diffing service interface

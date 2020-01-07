@@ -33,11 +33,10 @@ import (
 )
 
 func TestServiceLoop(t *testing.T) {
-	testErrorInChainEventLoop(t)
+	testErrorInStateChangeEventLoop(t)
 }
 
 var (
-	eventsChannel = make(chan core.ChainEvent, 1)
 	stateChangeEventCh = make(chan core.StateChangeEvent, 1)
 
 	testBlock1 = types.NewBlock(&types.Header{}, nil, nil, nil)
@@ -75,7 +74,7 @@ var (
 	}
 )
 
-func testErrorInChainEventLoop(t *testing.T) {
+func testErrorInStateChangeEventLoop(t *testing.T) {
 	blockChain := mocks.BlockChain{}
 	service := statediff.Service{
 		Mutex:         sync.Mutex{},
