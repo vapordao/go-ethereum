@@ -23,7 +23,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
@@ -111,11 +110,11 @@ func (sds *Service) Loop(stateChangeEventCh chan core.StateChangeEvent) {
 		//Notify stateChangeEvent channel of events
 		case stateChangeEvent := <-stateChangeEventCh:
 			log.Info("Event received from stateChangeEventCh", "event", stateChangeEvent)
-			processingErr := sds.processStateChanges(stateChangeEvent.ModifiedAccounts)
+			processingErr := sds.processStateChanges(stateChangeEvent)
 			if processingErr != nil {
 				// The service loop continues even if processing one StateChangeEvent fails
 				log.Error(fmt.Sprintf("Error processing state for block %d; error: %s ",
-					stateChangeEvent.ModifiedAccounts.Block.Number(), processingErr.Error()))
+					stateChangeEvent.Block.Number(), processingErr.Error()))
 			}
 		case err := <-errCh:
 			log.Warn("Error from state change event subscription, breaking loop", "error", err)
@@ -129,9 +128,10 @@ func (sds *Service) Loop(stateChangeEventCh chan core.StateChangeEvent) {
 	}
 }
 
-func (sds *Service) processStateChanges(stateChanges state.StateChanges) error {
+func (sds *Service) processStateChanges(stateChangeEvent core.StateChangeEvent) error {
 	var accountDiffs []AccountDiff
-	for addr, modifiedAccount := range stateChanges.ModifiedAccounts {
+	modifiedAccounts := stateChangeEvent.StateChanges.ModifiedAccounts
+	for addr, modifiedAccount := range modifiedAccounts {
 		//TODO: perhaps the AccountDiff struct should change such that the Value is
 		// actually an Account instead of changing it to a byte array here and then
 		// needing to change it back to an Account later
@@ -162,8 +162,8 @@ func (sds *Service) processStateChanges(stateChanges state.StateChanges) error {
 	}
 
 	stateDiff := StateDiff{
-		BlockNumber:     stateChanges.Block.Number(),
-		BlockHash:       stateChanges.Block.Hash(),
+		BlockNumber:     stateChangeEvent.Block.Number(),
+		BlockHash:       stateChangeEvent.Block.Hash(),
 		UpdatedAccounts: accountDiffs,
 		encoded:         nil,
 		err:             nil,

@@ -730,7 +730,6 @@ type ModifiedAccount struct {
 }
 type StateChanges struct {
 	ModifiedAccounts map[common.Address]ModifiedAccount
-	Block            *types.Block
 }
 
 // Commit writes the state to the underlying in-memory trie database.
@@ -740,7 +739,6 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, StateChanges, er
 
 	modifiedAccounts := StateChanges{
 		ModifiedAccounts: make(map[common.Address]ModifiedAccount),
-		Block:            nil,
 	}
 
 	// Commit objects to the trie, measuring the elapsed time

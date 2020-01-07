@@ -43,7 +43,8 @@ type ChainEvent struct {
 }
 
 type StateChangeEvent struct {
-	ModifiedAccounts state.StateChanges
+	*types.Block
+	state.StateChanges
 }
 
 type ChainSideEvent struct {

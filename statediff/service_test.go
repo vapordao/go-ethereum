@@ -56,21 +56,21 @@ var (
 	}
 
 	event1 = core.StateChangeEvent{
-		ModifiedAccounts: state.StateChanges{
+		Block:            testBlock1,
+		StateChanges: state.StateChanges{
 			ModifiedAccounts: map[common.Address]state.ModifiedAccount{account1Address: modifiedAccount1},
-			Block:            testBlock1,
 		},
 	}
 	event2 = core.StateChangeEvent{
-		ModifiedAccounts: state.StateChanges{
+		Block:            testBlock2,
+		StateChanges: state.StateChanges{
 			ModifiedAccounts: nil,
-			Block:            testBlock2,
 		},
 	}
 	event3 = core.StateChangeEvent{
-		ModifiedAccounts: state.StateChanges{
+		Block:            testBlock3,
+		StateChanges: state.StateChanges{
 			ModifiedAccounts: nil,
-			Block:            testBlock3,
 		},
 	}
 )
