@@ -80,6 +80,11 @@ func (blockChain *BlockChain) SubscribeStateChangeEvents(ch chan<- core.StateCha
 	return subscription
 }
 
+// Mock method for setting StateChangeEvents to return
+func (blockChain *BlockChain) SetStateChangeEvents(stateChangeEvents []core.StateChangeEvent) {
+	blockChain.StateChangeEvents = stateChangeEvents
+}
+
 // SetChainEvents mock method
 func (blockChain *BlockChain) SetChainEvents(chainEvents []core.ChainEvent) {
 	blockChain.ChainEvents = chainEvents

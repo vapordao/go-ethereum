@@ -755,7 +755,7 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, StateChanges, er
 				obj.dirtyCode = false
 			}
 
-			// add the dirty storage to the modifiedAccounts map before it's committed (and flushed from in-memory)
+			// Add the dirty storage to the modifiedAccounts map before it's committed (and flushed from in-memory)
 			modifiedAccount.Storage = dirtyStateObject.dirtyStorage
 
 			// Write any storage changes in the state object to its storage trie

@@ -56,7 +56,7 @@ func (api *PublicStateDiffAPI) Stream(ctx context.Context) (*rpc.Subscription, e
 
 	go func() {
 		// subscribe to events from the statediff service
-		payloadChannel := make(chan Payload, chainEventChanSize)
+		payloadChannel := make(chan Payload, stateChangeEventChanSize)
 		quitChan := make(chan bool, 1)
 		api.sds.Subscribe(rpcSub.ID, payloadChannel, quitChan)
 		// loop and await payloads and relay them to the subscriber with the notifier
