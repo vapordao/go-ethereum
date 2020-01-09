@@ -55,7 +55,6 @@ type Service struct {
 	// Used to sync access to the Subscriptions
 	sync.Mutex
 	// Used to build the state diff objects
-	Builder Builder
 	// Used to subscribe to chain events (blocks)
 	BlockChain blockChain
 	// Used to signal shutdown of the service
@@ -73,7 +72,6 @@ func NewStateDiffService(db ethdb.Database, blockChain *core.BlockChain, config 
 	return &Service{
 		Mutex:         sync.Mutex{},
 		BlockChain:    blockChain,
-		Builder:       NewBuilder(db, blockChain, config),
 		QuitChan:      make(chan bool),
 		Subscriptions: make(map[rpc.ID]Subscription),
 	}, nil
