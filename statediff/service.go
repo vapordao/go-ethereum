@@ -104,7 +104,7 @@ func (sds *Service) Loop(stateChangeEventCh chan core.StateChangeEvent) {
 		select {
 		//Notify stateChangeEvent channel of events
 		case stateChangeEvent := <-stateChangeEventCh:
-			log.Info("Event received from stateChangeEventCh", "event", stateChangeEvent)
+			log.Info("Event received from stateChangeEventCh", "block number", stateChangeEvent.Block.Number(), "event", stateChangeEvent)
 			processingErr := sds.processStateChanges(stateChangeEvent)
 			if processingErr != nil {
 				// The service loop continues even if processing one StateChangeEvent fails
@@ -134,9 +134,16 @@ func (sds *Service) processStateChanges(stateChangeEvent core.StateChangeEvent) 
 
 		var storageDiffs []StorageDiff
 		for k, v := range modifiedAccount.Storage {
+			//storage diff value should be an RLP object too
+			encodedValueRlp, err := rlp.EncodeToBytes(v[:])
+			if err != nil {
+				return err
+			}
+
+			storageKey := k
 			diff := StorageDiff{
-				Key:   k[:],
-				Value: v[:],
+				Key:   storageKey[:],
+				Value: encodedValueRlp,
 			}
 			storageDiffs = append(storageDiffs, diff)
 		}

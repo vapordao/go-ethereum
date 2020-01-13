@@ -114,37 +114,10 @@ func testErrorInStateChangeEventLoop(t *testing.T) {
 		t.Logf("Actual number of payloads does not equal expected.\nactual: %+v\nexpected: 2", len(payloads))
 	}
 
-	accountBlock1Bytes, err := rlp.EncodeToBytes(testAccount1)
-	if err != nil {
-		t.Error("Test failure:", t.Name())
-		t.Logf("Failed to encode state diff to bytes")
-	}
-
-	accountBlock2Bytes, err := rlp.EncodeToBytes(testAccount2)
-	if err != nil {
-		t.Error("Test failure:", t.Name())
-		t.Logf("Failed to encode state diff to bytes")
-	}
-
-	account1Diff := statediff.AccountDiff{
-		Key:     testAccount1Address[:],
-		Value:   accountBlock1Bytes,
-		Storage: nil,
-	}
-
-	account2StorageDiff := statediff.StorageDiff{
-		Key:   account2StorageKey[:],
-		Value: account2StorageValue[:],
-	}
-	account2Diff := statediff.AccountDiff{
-		Key:     testAccount2Address[:],
-		Value:   accountBlock2Bytes,
-		Storage: []statediff.StorageDiff{account2StorageDiff},
-	}
 	stateDiff := statediff.StateDiff{
 		BlockNumber:     testBlock1.Number(),
 		BlockHash:       testBlock1.Hash(),
-		UpdatedAccounts: []statediff.AccountDiff{account1Diff, account2Diff},
+		UpdatedAccounts: []statediff.AccountDiff{getAccount1Diff(t), getAccount2Diff(t)},
 	}
 
 	expectedStateDiffRlp, err := rlp.EncodeToBytes(stateDiff)
@@ -161,5 +134,42 @@ func testErrorInStateChangeEventLoop(t *testing.T) {
 	if !reflect.DeepEqual(payloads, expectedPayloads) {
 		t.Error("Test failure:", t.Name())
 		t.Logf("Actual payload equal expected.\nactual:%+v\nexpected: %+v", payloads, expectedPayloads)
+	}
+}
+
+func getAccount1Diff(t *testing.T) statediff.AccountDiff{
+	accountBlock1Bytes, err := rlp.EncodeToBytes(testAccount1)
+	if err != nil {
+		t.Error("Test failure:", t.Name())
+		t.Logf("Failed to encode state diff to bytes")
+	}
+
+	return statediff.AccountDiff{
+		Key:     testAccount1Address[:],
+		Value:   accountBlock1Bytes,
+		Storage: nil,
+	}
+}
+
+func getAccount2Diff(t *testing.T) statediff.AccountDiff {
+	account2Rlp, accountRlpErr := rlp.EncodeToBytes(testAccount2)
+	if accountRlpErr != nil {
+		t.Error("Test failure:", t.Name())
+		t.Logf("Failed to encode account diff")
+	}
+
+	storageValueRlp, storageRlpErr := rlp.EncodeToBytes(account2StorageValue)
+	if storageRlpErr != nil {
+		t.Error("Test failure:", t.Name())
+		t.Logf("Failed to encode storgae diff")
+	}
+	account2StorageDiff := statediff.StorageDiff{
+		Key:   account2StorageKey[:],
+		Value: storageValueRlp,
+	}
+	return statediff.AccountDiff{
+		Key:     testAccount2Address[:],
+		Value:   account2Rlp,
+		Storage: []statediff.StorageDiff{account2StorageDiff},
 	}
 }
