@@ -21,7 +21,9 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
@@ -102,12 +104,13 @@ func (sds *Service) Loop(stateChangeEventCh chan core.StateChangeEvent) {
 		//Notify stateChangeEvent channel of events
 		case stateChangeEvent := <-stateChangeEventCh:
 			log.Info("Event received from stateChangeEventCh", "block number", stateChangeEvent.Block.Number(), "event", stateChangeEvent)
-			processingErr := sds.processStateChanges(stateChangeEvent)
+			payload, processingErr := sds.processStateChanges(stateChangeEvent)
 			if processingErr != nil {
 				// The service loop continues even if processing one StateChangeEvent fails
 				log.Error(fmt.Sprintf("Error processing state for block %d; error: %s ",
 					stateChangeEvent.Block.Number(), processingErr.Error()))
 			}
+			sds.send(payload)
 		case err := <-errCh:
 			log.Warn("Error from state change event subscription, breaking loop", "error", err)
 			sds.close()
@@ -120,36 +123,17 @@ func (sds *Service) Loop(stateChangeEventCh chan core.StateChangeEvent) {
 	}
 }
 
-func (sds *Service) processStateChanges(stateChangeEvent core.StateChangeEvent) error {
+// processStateChanges builds the state diff Payload from the modified accounts in the StateChangeEvent
+func (sds *Service) processStateChanges(stateChangeEvent core.StateChangeEvent) (Payload, error) {
 	var accountDiffs []AccountDiff
+	var emptyPayload Payload
 	modifiedAccounts := stateChangeEvent.StateChanges.ModifiedAccounts
+
+	// Iterate over modified accounts to build AccountDiffs
 	for addr, modifiedAccount := range modifiedAccounts {
-		accountBytes, err := rlp.EncodeToBytes(modifiedAccount.Account)
+		a, err := buildAccountDiff(addr, modifiedAccount)
 		if err != nil {
-			return err
-		}
-
-		var storageDiffs []StorageDiff
-		for k, v := range modifiedAccount.Storage {
-			//storage diff value should be an RLP object too
-			encodedValueRlp, err := rlp.EncodeToBytes(v[:])
-			if err != nil {
-				return err
-			}
-
-			storageKey := k
-			diff := StorageDiff{
-				Key:   storageKey[:],
-				Value: encodedValueRlp,
-			}
-			storageDiffs = append(storageDiffs, diff)
-		}
-
-		address := addr
-		a := AccountDiff{
-			Key:     address[:],
-			Value:   accountBytes,
-			Storage: storageDiffs,
+			return emptyPayload, err
 		}
 
 		accountDiffs = append(accountDiffs, a)
@@ -163,14 +147,44 @@ func (sds *Service) processStateChanges(stateChangeEvent core.StateChangeEvent) 
 
 	stateDiffRlp, err := rlp.EncodeToBytes(stateDiff)
 	if err != nil {
-		return err
+		return emptyPayload, err
 	}
 	payload := Payload{
 		StateDiffRlp: stateDiffRlp,
 	}
 
-	sds.send(payload)
-	return nil
+	return payload, nil
+}
+
+// buildAccountDiff
+func buildAccountDiff(addr common.Address, modifiedAccount state.ModifiedAccount) (AccountDiff, error) {
+	emptyAccountDiff := AccountDiff{}
+	accountBytes, err := rlp.EncodeToBytes(modifiedAccount.Account)
+	if err != nil {
+		return emptyAccountDiff, err
+	}
+
+	var storageDiffs []StorageDiff
+	for k, v := range modifiedAccount.Storage {
+		// Storage diff value should be an RLP object too
+		encodedValueRlp, err := rlp.EncodeToBytes(v[:])
+		if err != nil {
+			return emptyAccountDiff, err
+		}
+		storageKey := k
+		diff := StorageDiff{
+			Key:   storageKey[:],
+			Value: encodedValueRlp,
+		}
+		storageDiffs = append(storageDiffs, diff)
+	}
+
+	address := addr
+	return AccountDiff{
+		Key:     address[:],
+		Value:   accountBytes,
+		Storage: storageDiffs,
+	}, nil
 }
 
 // Subscribe is used by the API to subscribe to the service loop
