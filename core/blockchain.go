@@ -1289,9 +1289,9 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	}
 	rawdb.WriteBlock(bc.db, block)
 
-	root, modifiedAccounts, commitErr := state.Commit(bc.chainConfig.IsEIP158(block.Number()))
-	log.Debug("Sending StateChangeEvent to the feed", "block number", block.Number(), "count", len(modifiedAccounts.ModifiedAccounts))
-	bc.stateChangeEventFeed.Send(StateChangeEvent{block, modifiedAccounts})
+	root, stateChanges, commitErr := state.Commit(bc.chainConfig.IsEIP158(block.Number()))
+	log.Debug("Sending StateChangeEvent to the feed", "block number", block.Number(), "count", len(stateChanges))
+	bc.stateChangeEventFeed.Send(StateChangeEvent{block, stateChanges})
 
 	if commitErr != nil {
 		return NonStatTy, commitErr

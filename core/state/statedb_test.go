@@ -73,9 +73,7 @@ func TestStateChangesEmittedFromCommit(t *testing.T) {
 	state, _ := New(common.Hash{}, NewDatabase(db))
 
 	// Commit 1: Create accounts with storage
-	expectedStateChangesOne := StateChanges{
-		ModifiedAccounts: make(map[common.Address]ModifiedAccount),
-	}
+	expectedStateChangesOne := make(StateChanges)
 
 	for i := byte(0); i < 2; i++ {
 		addr := common.BytesToAddress([]byte{i})
@@ -94,7 +92,7 @@ func TestStateChangesEmittedFromCommit(t *testing.T) {
 
 		// Collect modified accounts to assert against
 		modifiedAccount.Storage[storageKey] = storageValue
-		expectedStateChangesOne.ModifiedAccounts[addr] = modifiedAccount
+		expectedStateChangesOne[addr] = modifiedAccount
 
 		state.SetState(addr, storageKey, storageValue)
 	}
@@ -107,12 +105,10 @@ func TestStateChangesEmittedFromCommit(t *testing.T) {
 	assertStateChanges(actualStateChangesOne, expectedStateChangesOne, t)
 
 	// Commit 2: Update existing account storage
-	expectedStateChangesTwo := StateChanges{
-		ModifiedAccounts: make(map[common.Address]ModifiedAccount),
-	}
+	expectedStateChangesTwo := make(StateChanges)
 
 	var counter int
-	for addr, account := range expectedStateChangesOne.ModifiedAccounts {
+	for addr, account := range expectedStateChangesOne {
 		// Only update some of the account storage
 		if counter%2 == 0 {
 			newBalance := big.NewInt(100)
@@ -124,7 +120,7 @@ func TestStateChangesEmittedFromCommit(t *testing.T) {
 
 				// Collect modified accounts to assert against
 				account.Storage[storageKey] = updatedStorageValue
-				expectedStateChangesTwo.ModifiedAccounts[addr] = account
+				expectedStateChangesTwo[addr] = account
 
 				state.SetState(addr, storageKey, updatedStorageValue)
 			}
@@ -142,13 +138,13 @@ func TestStateChangesEmittedFromCommit(t *testing.T) {
 
 
 func assertStateChanges(actualChanges, expectedChanges StateChanges, t *testing.T) {
-	if len(actualChanges.ModifiedAccounts) != len(expectedChanges.ModifiedAccounts) {
+	if len(actualChanges) != len(expectedChanges) {
 		t.Error("Test failure:", t.Name())
-		t.Logf("Mismatch in number of StateChanges.ModifiedAccounts. actual: %v, expected: %v", len(actualChanges.ModifiedAccounts), len(expectedChanges.ModifiedAccounts))
+		t.Logf("Mismatch in number of StateChanges.ModifiedAccounts. actual: %v, expected: %v", len(actualChanges), len(expectedChanges))
 	}
 
-	for addr, account := range actualChanges.ModifiedAccounts {
-		expected := expectedChanges.ModifiedAccounts[addr]
+	for addr, account := range actualChanges{
+		expected := expectedChanges[addr]
 
 		if !reflect.DeepEqual(account.Nonce, expected.Nonce) {
 			t.Error("Test failure:", t.Name())

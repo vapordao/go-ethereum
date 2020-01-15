@@ -728,18 +728,14 @@ type ModifiedAccount struct {
 	Account
 	Storage
 }
-type StateChanges struct {
-	ModifiedAccounts map[common.Address]ModifiedAccount
-}
+type StateChanges map[common.Address]ModifiedAccount
 
 // Commit writes the state to the underlying in-memory trie database.
 func (s *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, StateChanges, error) {
 	// Finalize any pending changes and merge everything into the tries
 	s.IntermediateRoot(deleteEmptyObjects)
 
-	modifiedAccounts := StateChanges{
-		ModifiedAccounts: make(map[common.Address]ModifiedAccount),
-	}
+	stateChanges := make(StateChanges)
 
 	// Commit objects to the trie, measuring the elapsed time
 	for addr := range s.stateObjectsDirty {
@@ -762,7 +758,7 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, StateChanges, er
 			}
 		}
 
-		modifiedAccounts.ModifiedAccounts[addr] = modifiedAccount
+		stateChanges[addr] = modifiedAccount
 	}
 
 	if len(s.stateObjectsDirty) > 0 {
@@ -787,5 +783,5 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, StateChanges, er
 		return nil
 	})
 
-	return root, modifiedAccounts, err
+	return root, stateChanges, err
 }

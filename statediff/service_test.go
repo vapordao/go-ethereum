@@ -69,10 +69,8 @@ var (
 	event1 = core.StateChangeEvent{
 		Block: testBlock1,
 		StateChanges: state.StateChanges{
-			ModifiedAccounts: map[common.Address]state.ModifiedAccount{
-				testAccount1Address: modifiedAccount1,
-				testAccount2Address: modifiedAccount2,
-			},
+			testAccount1Address: modifiedAccount1,
+			testAccount2Address: modifiedAccount2,
 		},
 	}
 

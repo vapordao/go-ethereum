@@ -127,10 +127,9 @@ func (sds *Service) Loop(stateChangeEventCh chan core.StateChangeEvent) {
 func (sds *Service) processStateChanges(stateChangeEvent core.StateChangeEvent) (Payload, error) {
 	var accountDiffs []AccountDiff
 	var emptyPayload Payload
-	modifiedAccounts := stateChangeEvent.StateChanges.ModifiedAccounts
 
-	// Iterate over modified accounts to build AccountDiffs
-	for addr, modifiedAccount := range modifiedAccounts {
+	// Iterate over state changes to build AccountDiffs
+	for addr, modifiedAccount := range stateChangeEvent.StateChanges {
 		a, err := buildAccountDiff(addr, modifiedAccount)
 		if err != nil {
 			return emptyPayload, err
