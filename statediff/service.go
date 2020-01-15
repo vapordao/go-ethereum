@@ -24,6 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/state"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
@@ -62,6 +63,8 @@ type Service struct {
 	QuitChan chan bool
 	// A mapping of rpc.IDs to their subscription channels
 	Subscriptions map[rpc.ID]Subscription
+	// Addresses for contracts we care about - only sending diffs for these to the subscription
+	WatchedAddresses []common.Address
 	// Whether or not we have any subscribers; only if we do, do we processes state diffs
 	subscribers int32
 }
@@ -104,7 +107,9 @@ func (sds *Service) Loop(stateChangeEventCh chan core.StateChangeEvent) {
 		//Notify stateChangeEvent channel of events
 		case stateChangeEvent := <-stateChangeEventCh:
 			log.Info("Event received from stateChangeEventCh", "block number", stateChangeEvent.Block.Number(), "event", stateChangeEvent)
-			payload, processingErr := sds.processStateChanges(stateChangeEvent)
+			stateChanges := sds.filterByWatchedAddresses(stateChangeEvent.StateChanges)
+
+			payload, processingErr := processStateChanges(stateChanges, stateChangeEvent.Block)
 			if processingErr != nil {
 				// The service loop continues even if processing one StateChangeEvent fails
 				log.Error(fmt.Sprintf("Error processing state for block %d; error: %s ",
@@ -124,12 +129,12 @@ func (sds *Service) Loop(stateChangeEventCh chan core.StateChangeEvent) {
 }
 
 // processStateChanges builds the state diff Payload from the modified accounts in the StateChangeEvent
-func (sds *Service) processStateChanges(stateChangeEvent core.StateChangeEvent) (Payload, error) {
+func processStateChanges(stateChanges state.StateChanges, block *types.Block) (Payload, error) {
 	var accountDiffs []AccountDiff
 	var emptyPayload Payload
 
 	// Iterate over state changes to build AccountDiffs
-	for addr, modifiedAccount := range stateChangeEvent.StateChanges {
+	for addr, modifiedAccount := range stateChanges {
 		a, err := buildAccountDiff(addr, modifiedAccount)
 		if err != nil {
 			return emptyPayload, err
@@ -139,8 +144,8 @@ func (sds *Service) processStateChanges(stateChangeEvent core.StateChangeEvent) 
 	}
 
 	stateDiff := StateDiff{
-		BlockNumber:     stateChangeEvent.Block.Number(),
-		BlockHash:       stateChangeEvent.Block.Hash(),
+		BlockNumber:     block.Number(),
+		BlockHash:       block.Hash(),
 		UpdatedAccounts: accountDiffs,
 	}
 
@@ -184,6 +189,30 @@ func buildAccountDiff(addr common.Address, modifiedAccount state.ModifiedAccount
 		Value:   accountBytes,
 		Storage: storageDiffs,
 	}, nil
+}
+
+func (sds *Service) addressInWatchedAddresses(address common.Address) bool {
+	for _, watchedAddress := range sds.WatchedAddresses {
+		if watchedAddress == address {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (sds *Service) filterByWatchedAddresses(stateChanges state.StateChanges) state.StateChanges {
+	if len(sds.WatchedAddresses) > 0 {
+		filteredStateChanges := make(state.StateChanges)
+		for addr, modifiedAccount := range stateChanges {
+			if sds.addressInWatchedAddresses(addr) {
+				filteredStateChanges[addr] = modifiedAccount
+			}
+		}
+		return filteredStateChanges
+	} else {
+		return stateChanges
+	}
 }
 
 // Subscribe is used by the API to subscribe to the service loop
