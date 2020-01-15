@@ -228,7 +228,7 @@ func (sds *Service) send(payload Payload) {
 	for id, sub := range sds.Subscriptions {
 		select {
 		case sub.PayloadChan <- payload:
-			log.Info(fmt.Sprintf("sending state diff payload to subscription %s", id))
+			log.Debug(fmt.Sprintf("sending state diff payload to subscription %s", id))
 		default:
 			log.Info(fmt.Sprintf("unable to send payload to subscription %s; channel has no receiver", id))
 			// in this case, try to close the bad subscription and remove it
