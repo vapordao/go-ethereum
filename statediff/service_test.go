@@ -119,14 +119,22 @@ func testErrorInStateChangeEventLoop(t *testing.T) {
 		BlockHash:       testBlock1.Hash(),
 		UpdatedAccounts: []statediff.AccountDiff{getAccount1Diff(t), getAccount2Diff(t)},
 	}
-
 	expectedStateDiffRlp, err := rlp.EncodeToBytes(stateDiff)
 	if err != nil {
 		t.Error("Test failure:", t.Name())
 		t.Logf("Failed to encode state diff to bytes")
 	}
 
-	emptyStateDiffRlp := []byte{229, 128, 160, 177, 89, 160, 119, 252, 42, 247, 155, 154, 156, 116, 140, 156, 14, 80, 255, 149, 183, 76, 50, 148, 110, 213, 36, 24, 252, 192, 147, 208, 149, 63, 38, 192, 192, 192}
+	emptyStateDiff := statediff.StateDiff{
+		BlockNumber:     testBlock1.Number(),
+		BlockHash:       testBlock1.Hash(),
+	}
+	emptyStateDiffRlp, err := rlp.EncodeToBytes(emptyStateDiff)
+	if err != nil {
+		t.Error("Test failure:", t.Name())
+		t.Logf("Failed to encode empty state diff to bytes")
+	}
+
 	expectedPayloads := []statediff.Payload{
 		{StateDiffRlp: expectedStateDiffRlp},
 		{StateDiffRlp: emptyStateDiffRlp},

@@ -22,8 +22,6 @@ package statediff
 import (
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/core/state"
-
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -35,8 +33,6 @@ type Subscription struct {
 
 // Payload packages the data to send to statediff subscriptions
 type Payload struct {
-	BlockRlp     []byte `json:"blockRlp"`
-	ReceiptsRlp  []byte `json:"receiptsRlp"`
 	StateDiffRlp []byte `json:"stateDiff"    gencodec:"required"`
 }
 
@@ -44,39 +40,18 @@ type Payload struct {
 type StateDiff struct {
 	BlockNumber     *big.Int      `json:"blockNumber"     gencodec:"required"`
 	BlockHash       common.Hash   `json:"blockHash"       gencodec:"required"`
-	CreatedAccounts []AccountDiff `json:"createdAccounts" gencodec:"required"`
-	DeletedAccounts []AccountDiff `json:"deletedAccounts" gencodec:"required"`
 	UpdatedAccounts []AccountDiff `json:"updatedAccounts" gencodec:"required"`
 }
 
 // AccountDiff holds the data for a single state diff node
 type AccountDiff struct {
-	Leaf    bool          `json:"leaf"        gencodec:"required"`
 	Key     []byte        `json:"key"         gencodec:"required"`
 	Value   []byte        `json:"value"       gencodec:"required"`
-	Proof   [][]byte      `json:"proof"       gencodec:"required"`
-	Path    []byte        `json:"path"        gencodec:"required"`
 	Storage []StorageDiff `json:"storage"     gencodec:"required"`
 }
 
 // StorageDiff holds the data for a single storage diff node
 type StorageDiff struct {
-	Leaf  bool     `json:"leaf"        gencodec:"required"`
 	Key   []byte   `json:"key"         gencodec:"required"`
 	Value []byte   `json:"value"       gencodec:"required"`
-	Proof [][]byte `json:"proof"       gencodec:"required"`
-	Path  []byte   `json:"path"        gencodec:"required"`
-}
-
-// AccountsMap is a mapping of keccak256(address) => accountWrapper
-type AccountsMap map[common.Hash]accountWrapper
-
-// AccountWrapper is used to temporary associate the unpacked account with its raw values
-type accountWrapper struct {
-	Account  *state.Account
-	Leaf     bool
-	RawKey   []byte
-	RawValue []byte
-	Proof    [][]byte
-	Path     []byte
 }

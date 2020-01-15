@@ -22,7 +22,6 @@ import (
 	"sync/atomic"
 
 	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
@@ -61,8 +60,6 @@ type Service struct {
 	QuitChan chan bool
 	// A mapping of rpc.IDs to their subscription channels
 	Subscriptions map[rpc.ID]Subscription
-	// Cache the last block so that we can avoid having to lookup the next block's parent
-	lastBlock *types.Block
 	// Whether or not we have any subscribers; only if we do, do we processes state diffs
 	subscribers int32
 }
