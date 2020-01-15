@@ -162,8 +162,6 @@ func (sds *Service) processStateChanges(stateChangeEvent core.StateChangeEvent) 
 		BlockNumber:     stateChangeEvent.Block.Number(),
 		BlockHash:       stateChangeEvent.Block.Hash(),
 		UpdatedAccounts: accountDiffs,
-		encoded:         nil,
-		err:             nil,
 	}
 
 	stateDiffRlp, err := rlp.EncodeToBytes(stateDiff)

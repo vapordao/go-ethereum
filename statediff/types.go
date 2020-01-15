@@ -20,7 +20,6 @@
 package statediff
 
 import (
-	"encoding/json"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/core/state"
@@ -39,27 +38,6 @@ type Payload struct {
 	BlockRlp     []byte `json:"blockRlp"`
 	ReceiptsRlp  []byte `json:"receiptsRlp"`
 	StateDiffRlp []byte `json:"stateDiff"    gencodec:"required"`
-
-	encoded []byte
-	err     error
-}
-
-func (sd *Payload) ensureEncoded() {
-	if sd.encoded == nil && sd.err == nil {
-		sd.encoded, sd.err = json.Marshal(sd)
-	}
-}
-
-// Length to implement Encoder interface for Payload
-func (sd *Payload) Length() int {
-	sd.ensureEncoded()
-	return len(sd.encoded)
-}
-
-// Encode to implement Encoder interface for Payload
-func (sd *Payload) Encode() ([]byte, error) {
-	sd.ensureEncoded()
-	return sd.encoded, sd.err
 }
 
 // StateDiff is the final output structure from the builder
@@ -69,9 +47,6 @@ type StateDiff struct {
 	CreatedAccounts []AccountDiff `json:"createdAccounts" gencodec:"required"`
 	DeletedAccounts []AccountDiff `json:"deletedAccounts" gencodec:"required"`
 	UpdatedAccounts []AccountDiff `json:"updatedAccounts" gencodec:"required"`
-
-	encoded []byte
-	err     error
 }
 
 // AccountDiff holds the data for a single state diff node
