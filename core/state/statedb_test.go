@@ -86,15 +86,20 @@ func TestStateChangesEmittedFromCommit(t *testing.T) {
 				CodeHash: emptyCodeHash,
 			},
 		}
+		newBalance := big.NewInt(int64(i))
+		state.SetBalance(addr, newBalance)
+		modifiedAccount.Account.Balance = newBalance
 
-		storageKey := common.BytesToHash([]byte{i, i, i})
-		storageValue := common.BytesToHash([]byte{i, i, i, i})
+		if i%2 == 0 {
+			storageKey := common.BytesToHash([]byte{i, i, i})
+			storageValue := common.BytesToHash([]byte{i, i, i, i})
+			modifiedAccount.Storage[storageKey] = storageValue
+
+			state.SetState(addr, storageKey, storageValue)
+		}
 
 		// Collect modified accounts to assert against
-		modifiedAccount.Storage[storageKey] = storageValue
 		expectedStateChangesOne[addr] = modifiedAccount
-
-		state.SetState(addr, storageKey, storageValue)
 	}
 
 	_, actualStateChangesOne, commitErr := state.Commit(false)
