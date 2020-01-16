@@ -46,28 +46,38 @@ var (
 	testBlock3 = types.NewBlock(&types.Header{}, nil, nil, nil)
 
 	testAccount1Address = common.HexToAddress("0x1")
-	testAccount1 = state.Account{
-		Nonce:   0,
-		Balance: big.NewInt(100),
-		Root:    common.HexToHash("0x01"),
-	}
+	testAccount2Address = common.HexToAddress("0x2")
+	testAccount3Address = common.HexToAddress("0x3")
+
 	modifiedAccount1 = state.ModifiedAccount{
-		Account: testAccount1,
+		Account: state.Account{
+			Nonce:   0,
+			Balance: big.NewInt(100),
+			Root:    common.HexToHash("0x01"),
+		},
 		Storage: nil,
 	}
-	testAccount2Address = common.HexToAddress("0x2")
-	testAccount2 = state.Account{
-		Nonce:   0,
-		Balance: big.NewInt(200),
-		Root:    common.HexToHash("0x02"),
-	}
-	account2StorageKey =common.HexToHash("0x0002")
+
+	account2StorageKey = common.HexToHash("0x0002")
 	account2StorageValue = common.HexToHash("0x00002")
-	account2Storage = state.Storage{account2StorageKey: account2StorageValue}
 	modifiedAccount2 = state.ModifiedAccount{
-		Account: testAccount2,
-		Storage: account2Storage,
+		Account: state.Account{
+			Nonce:   0,
+			Balance: big.NewInt(200),
+			Root:    common.HexToHash("0x02"),
+		},
+		Storage: state.Storage{account2StorageKey: account2StorageValue},
 	}
+
+	modifiedAccount3 = state.ModifiedAccount{
+		Account: state.Account{
+			Nonce:   0,
+			Balance: big.NewInt(300),
+			Root:    common.HexToHash("0x03"),
+		},
+		Storage: nil,
+	}
+
 	event1 = core.StateChangeEvent{
 		Block: testBlock1,
 		StateChanges: state.StateChanges{
@@ -76,9 +86,14 @@ var (
 		},
 	}
 
-	noStateChangeEvent1 = core.StateChangeEvent{Block: testBlock1, StateChanges: state.StateChanges{}}
-	event2 = core.StateChangeEvent{Block: testBlock2, StateChanges: state.StateChanges{}}
-	event3 = core.StateChangeEvent{Block: testBlock3, StateChanges: state.StateChanges{}}
+	event2 = core.StateChangeEvent{
+		Block: testBlock2,
+		StateChanges: state.StateChanges{
+			testAccount3Address: modifiedAccount3,
+		},
+	}
+
+	noStateChangeEvent = core.StateChangeEvent{Block: testBlock1, StateChanges: state.StateChanges{}}
 )
 
 func testWhenThereAreNoStateDiffs(t *testing.T) {
@@ -93,7 +108,7 @@ func testWhenThereAreNoStateDiffs(t *testing.T) {
 	payloadChan := make(chan statediff.Payload, 2)
 	quitChan := make(chan bool)
 	service.Subscribe(rpc.NewID(), payloadChan, quitChan)
-	blockChain.SetStateChangeEvents([]core.StateChangeEvent{event2, event2, event3})
+	blockChain.SetStateChangeEvents([]core.StateChangeEvent{event2, event2, noStateChangeEvent})
 
 	payloads := make([]statediff.Payload, 0, 2)
 	wg := sync.WaitGroup{}
@@ -127,7 +142,7 @@ func testWhenThereAreNoStateDiffs(t *testing.T) {
 	}
 }
 
-func testWhenThereAreStateAndStorageDiffs(t *testing.T) {
+func testWhenThereAreStateDiffs(t *testing.T) {
 	blockChain := mocks.BlockChain{}
 	service := statediff.Service{
 		Mutex:         sync.Mutex{},
@@ -139,7 +154,7 @@ func testWhenThereAreStateAndStorageDiffs(t *testing.T) {
 	payloadChan := make(chan statediff.Payload, 2)
 	quitChan := make(chan bool)
 	service.Subscribe(rpc.NewID(), payloadChan, quitChan)
-	blockChain.SetStateChangeEvents([]core.StateChangeEvent{event1, event2, event3})
+	blockChain.SetStateChangeEvents([]core.StateChangeEvent{event1, event2, noStateChangeEvent})
 
 	payloads := make([]statediff.Payload, 0, 2)
 	wg := sync.WaitGroup{}
@@ -162,19 +177,36 @@ func testWhenThereAreStateAndStorageDiffs(t *testing.T) {
 		t.Logf("Actual number of payloads does not equal expected.\nactual: %+v\nexpected: 2", len(payloads))
 	}
 
-	stateDiff := statediff.StateDiff{
+	stateDiffFromEvent1 := statediff.StateDiff{
 		BlockNumber:     testBlock1.Number(),
 		BlockHash:       testBlock1.Hash(),
-		UpdatedAccounts: []statediff.AccountDiff{getAccount1Diff(t), getAccount2Diff(t)},
+		UpdatedAccounts: []statediff.AccountDiff{
+			getAccountDiff(testAccount1Address, modifiedAccount1, t),
+			getAccountDiff(testAccount2Address, modifiedAccount2, t),
+		},
 	}
-	expectedStateDiffRlp, err := rlp.EncodeToBytes(stateDiff)
+	expectedStateDiffRlpFromEvent1, err := rlp.EncodeToBytes(stateDiffFromEvent1)
 	if err != nil {
 		t.Error("Test failure:", t.Name())
 		t.Logf("Failed to encode state diff to bytes")
 	}
+
+	stateDiffFromEvent2 := statediff.StateDiff{
+		BlockNumber:     testBlock2.Number(),
+		BlockHash:       testBlock2.Hash(),
+		UpdatedAccounts: []statediff.AccountDiff{
+			getAccountDiff(testAccount3Address, modifiedAccount3, t),
+		},
+	}
+	expectedStateDiffRlpFromEvent2, err := rlp.EncodeToBytes(stateDiffFromEvent2)
+	if err != nil {
+		t.Error("Test failure:", t.Name())
+		t.Logf("Failed to encode state diff to bytes")
+	}
+
 	expectedPayloads := []statediff.Payload{
-		{StateDiffRlp: expectedStateDiffRlp},
-		{StateDiffRlp: getEmptyStateDiffRlp(*testBlock1, t)},
+		{StateDiffRlp: expectedStateDiffRlpFromEvent1},
+		{StateDiffRlp: expectedStateDiffRlpFromEvent2},
 	}
 	if !reflect.DeepEqual(payloads, expectedPayloads) {
 		t.Error("Test failure:", t.Name())
@@ -194,7 +226,7 @@ func testWatchedAddresses(t *testing.T) {
 	payloadChan := make(chan statediff.Payload, 2)
 	quitChan := make(chan bool)
 	service.Subscribe(rpc.NewID(), payloadChan, quitChan)
-	blockChain.SetStateChangeEvents([]core.StateChangeEvent{event1, event2, event3})
+	blockChain.SetStateChangeEvents([]core.StateChangeEvent{event1, event2, noStateChangeEvent})
 
 	payloads := make([]statediff.Payload, 0, 2)
 	wg := sync.WaitGroup{}
@@ -220,7 +252,7 @@ func testWatchedAddresses(t *testing.T) {
 	stateDiff := statediff.StateDiff{
 		BlockNumber:     testBlock1.Number(),
 		BlockHash:       testBlock1.Hash(),
-		UpdatedAccounts: []statediff.AccountDiff{getAccount2Diff(t)},
+		UpdatedAccounts: []statediff.AccountDiff{getAccountDiff(testAccount2Address, modifiedAccount2, t)},
 	}
 	expectedStateDiffRlp, err := rlp.EncodeToBytes(stateDiff)
 	if err != nil {
@@ -238,40 +270,32 @@ func testWatchedAddresses(t *testing.T) {
 
 }
 
-func getAccount1Diff(t *testing.T) statediff.AccountDiff{
-	accountBlock1Bytes, err := rlp.EncodeToBytes(testAccount1)
-	if err != nil {
-		t.Error("Test failure:", t.Name())
-		t.Logf("Failed to encode state diff to bytes")
-	}
-
-	return statediff.AccountDiff{
-		Key:     testAccount1Address[:],
-		Value:   accountBlock1Bytes,
-		Storage: nil,
-	}
-}
-
-func getAccount2Diff(t *testing.T) statediff.AccountDiff {
-	account2Rlp, accountRlpErr := rlp.EncodeToBytes(testAccount2)
+func getAccountDiff(accountAddress common.Address, modifedAccount state.ModifiedAccount, t *testing.T) statediff.AccountDiff {
+	accountRlp, accountRlpErr := rlp.EncodeToBytes(modifedAccount.Account)
 	if accountRlpErr != nil {
 		t.Error("Test failure:", t.Name())
 		t.Logf("Failed to encode account diff")
 	}
 
-	storageValueRlp, storageRlpErr := rlp.EncodeToBytes(account2StorageValue)
-	if storageRlpErr != nil {
-		t.Error("Test failure:", t.Name())
-		t.Logf("Failed to encode storgae diff")
+	var storageDiffs []statediff.StorageDiff
+	for key, value := range modifedAccount.Storage {
+		storageValueRlp, storageRlpErr := rlp.EncodeToBytes(value)
+		if storageRlpErr != nil {
+			t.Error("Test failure:", t.Name())
+			t.Logf("Failed to encode storgae diff")
+		}
+		storageDiff := statediff.StorageDiff{
+			Key:   key[:],
+			Value: storageValueRlp,
+		}
+
+		storageDiffs = append(storageDiffs, storageDiff)
 	}
-	account2StorageDiff := statediff.StorageDiff{
-		Key:   account2StorageKey[:],
-		Value: storageValueRlp,
-	}
+
 	return statediff.AccountDiff{
-		Key:     testAccount2Address[:],
-		Value:   account2Rlp,
-		Storage: []statediff.StorageDiff{account2StorageDiff},
+		Key:     accountAddress[:],
+		Value:   accountRlp,
+		Storage: storageDiffs,
 	}
 }
 
