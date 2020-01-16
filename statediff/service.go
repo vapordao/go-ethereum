@@ -18,6 +18,7 @@ package statediff
 
 import (
 	"fmt"
+	"reflect"
 	"sync"
 	"sync/atomic"
 
@@ -115,7 +116,15 @@ func (sds *Service) Loop(stateChangeEventCh chan core.StateChangeEvent) {
 				log.Error(fmt.Sprintf("Error processing state for block %d; error: %s ",
 					stateChangeEvent.Block.Number(), processingErr.Error()))
 			}
-			sds.send(payload)
+
+			isEmpty, err := isEmptyPayload(payload, stateChangeEvent.Block)
+			if err != nil {
+				log.Warn("Error checking is payload is empty")
+			}
+			// Send a payload to subscribers only if isn't empty
+			if !isEmpty {
+				sds.send(payload)
+			}
 		case err := <-errCh:
 			log.Warn("Error from state change event subscription, breaking loop", "error", err)
 			sds.close()
@@ -213,6 +222,24 @@ func (sds *Service) filterByWatchedAddresses(stateChanges state.StateChanges) st
 	} else {
 		return stateChanges
 	}
+}
+
+func getEmptyStateDiffRlp(block *types.Block) ([]byte, error) {
+	stateDiffWithoutUpdatedAccounts := StateDiff{
+		BlockNumber:     block.Number(),
+		BlockHash:       block.Hash(),
+	}
+
+	return rlp.EncodeToBytes(stateDiffWithoutUpdatedAccounts)
+}
+
+func isEmptyPayload(payload Payload, block *types.Block) (bool, error) {
+	emptyStateDiffRlp, err := getEmptyStateDiffRlp(block)
+	if err != nil {
+		return false, err
+	}
+
+	return reflect.DeepEqual(payload.StateDiffRlp, emptyStateDiffRlp), nil
 }
 
 // Subscribe is used by the API to subscribe to the service loop

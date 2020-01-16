@@ -34,7 +34,8 @@ import (
 
 func TestServiceLoop(t *testing.T) {
 	testWhenThereAreNoStateDiffs(t)
-	testWhenThereAreStateAndStorageDiffs(t)
+	testWhenThereAreStateDiffs(t)
+	testSomeOfTheStateDiffsAreEmpty(t)
 	testWatchedAddresses(t)
 }
 
@@ -93,7 +94,8 @@ var (
 		},
 	}
 
-	noStateChangeEvent = core.StateChangeEvent{Block: testBlock1, StateChanges: state.StateChanges{}}
+	// The mock Blockchain sends an error for any event after the second on
+	erroredStateChangeEvent = core.StateChangeEvent{Block: testBlock3, StateChanges: state.StateChanges{}}
 )
 
 func testWhenThereAreNoStateDiffs(t *testing.T) {
@@ -108,13 +110,14 @@ func testWhenThereAreNoStateDiffs(t *testing.T) {
 	payloadChan := make(chan statediff.Payload, 2)
 	quitChan := make(chan bool)
 	service.Subscribe(rpc.NewID(), payloadChan, quitChan)
-	blockChain.SetStateChangeEvents([]core.StateChangeEvent{event2, event2, noStateChangeEvent})
+	noStateChangeEventBlock1 := core.StateChangeEvent{Block: testBlock1, StateChanges: state.StateChanges{}}
+	blockChain.SetStateChangeEvents([]core.StateChangeEvent{noStateChangeEventBlock1, erroredStateChangeEvent})
 
 	payloads := make([]statediff.Payload, 0, 2)
 	wg := sync.WaitGroup{}
 	go func() {
 		wg.Add(1)
-		for i := 0; i < 2; i++ {
+		for i := 0; i < 1; i++ {
 			select {
 			case payload := <-payloadChan:
 				payloads = append(payloads, payload)
@@ -126,14 +129,11 @@ func testWhenThereAreNoStateDiffs(t *testing.T) {
 
 	service.Loop(stateChangeEventCh)
 	wg.Wait()
-	if len(payloads) != 2 {
+	if len(payloads) != 0 {
 		t.Error("Test failure:", t.Name())
 		t.Logf("Actual number of payloads does not equal expected.\nactual: %+v\nexpected: 2", len(payloads))
 	}
-	expectedPayloads := []statediff.Payload{
-		{StateDiffRlp: getEmptyStateDiffRlp(*testBlock1, t)},
-		{StateDiffRlp: getEmptyStateDiffRlp(*testBlock1, t)},
-	}
+	expectedPayloads := []statediff.Payload{}
 
 	// If there are no statediffs the payloads include empty statediffs
 	if !reflect.DeepEqual(payloads, expectedPayloads) {
@@ -154,7 +154,7 @@ func testWhenThereAreStateDiffs(t *testing.T) {
 	payloadChan := make(chan statediff.Payload, 2)
 	quitChan := make(chan bool)
 	service.Subscribe(rpc.NewID(), payloadChan, quitChan)
-	blockChain.SetStateChangeEvents([]core.StateChangeEvent{event1, event2, noStateChangeEvent})
+	blockChain.SetStateChangeEvents([]core.StateChangeEvent{event1, event2, erroredStateChangeEvent})
 
 	payloads := make([]statediff.Payload, 0, 2)
 	wg := sync.WaitGroup{}
@@ -214,19 +214,20 @@ func testWhenThereAreStateDiffs(t *testing.T) {
 	}
 }
 
-func testWatchedAddresses(t *testing.T) {
+func testSomeOfTheStateDiffsAreEmpty(t *testing.T) {
 	blockChain := mocks.BlockChain{}
 	service := statediff.Service{
 		Mutex:         sync.Mutex{},
 		BlockChain:    &blockChain,
 		QuitChan:      make(chan bool),
 		Subscriptions: make(map[rpc.ID]statediff.Subscription),
-		WatchedAddresses: []common.Address{testAccount2Address},
+		WatchedAddresses: []common.Address{}, // when empty, return all diffs
 	}
 	payloadChan := make(chan statediff.Payload, 2)
 	quitChan := make(chan bool)
 	service.Subscribe(rpc.NewID(), payloadChan, quitChan)
-	blockChain.SetStateChangeEvents([]core.StateChangeEvent{event1, event2, noStateChangeEvent})
+	noStateChangeEvent := core.StateChangeEvent{Block: testBlock2, StateChanges: state.StateChanges{}}
+	blockChain.SetStateChangeEvents([]core.StateChangeEvent{event1, noStateChangeEvent, erroredStateChangeEvent})
 
 	payloads := make([]statediff.Payload, 0, 2)
 	wg := sync.WaitGroup{}
@@ -244,9 +245,67 @@ func testWatchedAddresses(t *testing.T) {
 
 	service.Loop(stateChangeEventCh)
 	wg.Wait()
-	if len(payloads) != 2 {
+	if len(payloads) != 1 {
 		t.Error("Test failure:", t.Name())
 		t.Logf("Actual number of payloads does not equal expected.\nactual: %+v\nexpected: 2", len(payloads))
+	}
+
+	stateDiffFromEvent1 := statediff.StateDiff{
+		BlockNumber:     testBlock1.Number(),
+		BlockHash:       testBlock1.Hash(),
+		UpdatedAccounts: []statediff.AccountDiff{
+			getAccountDiff(testAccount1Address, modifiedAccount1, t),
+			getAccountDiff(testAccount2Address, modifiedAccount2, t),
+		},
+	}
+	expectedStateDiffRlpFromEvent1, err := rlp.EncodeToBytes(stateDiffFromEvent1)
+	if err != nil {
+		t.Error("Test failure:", t.Name())
+		t.Logf("Failed to encode state diff to bytes")
+	}
+
+	expectedPayloads := []statediff.Payload{
+		{StateDiffRlp: expectedStateDiffRlpFromEvent1},
+	}
+
+	if !reflect.DeepEqual(payloads, expectedPayloads) {
+		t.Error("Test failure:", t.Name())
+		t.Logf("Actual payload equal expected.\nactual:%+v\nexpected: %+v", payloads, expectedPayloads)
+	}
+}
+func testWatchedAddresses(t *testing.T) {
+	blockChain := mocks.BlockChain{}
+	service := statediff.Service{
+		Mutex:         sync.Mutex{},
+		BlockChain:    &blockChain,
+		QuitChan:      make(chan bool),
+		Subscriptions: make(map[rpc.ID]statediff.Subscription),
+		WatchedAddresses: []common.Address{testAccount2Address},
+	}
+	payloadChan := make(chan statediff.Payload, 2)
+	quitChan := make(chan bool)
+	service.Subscribe(rpc.NewID(), payloadChan, quitChan)
+	blockChain.SetStateChangeEvents([]core.StateChangeEvent{event1, event2, erroredStateChangeEvent})
+
+	payloads := make([]statediff.Payload, 0, 2)
+	wg := sync.WaitGroup{}
+	go func() {
+		wg.Add(1)
+		for i := 0; i < 2; i++ {
+			select {
+			case payload := <-payloadChan:
+				payloads = append(payloads, payload)
+			case <-quitChan:
+			}
+		}
+		wg.Done()
+	}()
+
+	service.Loop(stateChangeEventCh)
+	wg.Wait()
+	if len(payloads) != 1 {
+		t.Error("Test failure:", t.Name())
+		t.Logf("Actual number of payloads does not equal expected.\nactual: %+v\nexpected: 1", len(payloads))
 	}
 
 	stateDiff := statediff.StateDiff{
@@ -261,13 +320,11 @@ func testWatchedAddresses(t *testing.T) {
 	}
 	expectedPayloads := []statediff.Payload{
 		{StateDiffRlp: expectedStateDiffRlp},
-		{StateDiffRlp: getEmptyStateDiffRlp(*testBlock1, t)},
 	}
 	if !reflect.DeepEqual(payloads, expectedPayloads) {
 		t.Error("Test failure:", t.Name())
 		t.Logf("Actual payload equal expected.\nactual:%+v\nexpected: %+v", payloads, expectedPayloads)
 	}
-
 }
 
 func getAccountDiff(accountAddress common.Address, modifedAccount state.ModifiedAccount, t *testing.T) statediff.AccountDiff {
@@ -297,19 +354,4 @@ func getAccountDiff(accountAddress common.Address, modifedAccount state.Modified
 		Value:   accountRlp,
 		Storage: storageDiffs,
 	}
-}
-
-func getEmptyStateDiffRlp(block types.Block, t *testing.T) []byte {
-	emptyStateDiff := statediff.StateDiff{
-		BlockNumber:     block.Number(),
-		BlockHash:       block.Hash(),
-	}
-
-	emptyStateDiffRlp, err := rlp.EncodeToBytes(emptyStateDiff)
-	if err != nil {
-		t.Error("Test failure:", t.Name())
-		t.Logf("Failed to encode empty state diff to bytes")
-	}
-
-	return emptyStateDiffRlp
 }
