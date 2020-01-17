@@ -108,7 +108,7 @@ func (sds *Service) Loop(stateChangeEventCh chan core.StateChangeEvent) {
 		select {
 		//Notify stateChangeEvent channel of events
 		case stateChangeEvent := <-stateChangeEventCh:
-			log.Info("Event received from stateChangeEventCh", "block number", stateChangeEvent.Block.Number(), "event", stateChangeEvent)
+			log.Debug("Event received from stateChangeEventCh", "block number", stateChangeEvent.Block.Number(), "event", stateChangeEvent)
 			stateChanges := sds.filterByWatchedAddresses(stateChangeEvent.StateChanges)
 
 			payload, processingErr := processStateChanges(stateChanges, stateChangeEvent.Block)
