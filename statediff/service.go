@@ -203,7 +203,8 @@ func buildAccountDiff(addr common.Address, modifiedAccount state.ModifiedAccount
 
 func (sds *Service) addressInWatchedAddresses(address common.Address) bool {
 	for _, watchedAddress := range sds.WatchedAddresses {
-		if watchedAddress == address.String() {
+		checkSummedWatchedAddress := common.HexToAddress(watchedAddress).Hex()
+		if checkSummedWatchedAddress == address.Hex() {
 			return true
 		}
 	}
