@@ -105,7 +105,7 @@ func testWhenThereAreNoStateDiffs(t *testing.T) {
 		BlockChain:    &blockChain,
 		QuitChan:      make(chan bool),
 		Subscriptions: make(map[rpc.ID]statediff.Subscription),
-		WatchedAddresses: []common.Address{}, // when empty, return all diffs
+		WatchedAddresses: []string{}, // when empty, return all diffs
 	}
 	payloadChan := make(chan statediff.Payload, 2)
 	quitChan := make(chan bool)
@@ -149,7 +149,7 @@ func testWhenThereAreStateDiffs(t *testing.T) {
 		BlockChain:    &blockChain,
 		QuitChan:      make(chan bool),
 		Subscriptions: make(map[rpc.ID]statediff.Subscription),
-		WatchedAddresses: []common.Address{}, // when empty, return all diffs
+		WatchedAddresses: []string{}, // when empty, return all diffs
 	}
 	payloadChan := make(chan statediff.Payload, 2)
 	quitChan := make(chan bool)
@@ -221,7 +221,7 @@ func testSomeOfTheStateDiffsAreEmpty(t *testing.T) {
 		BlockChain:    &blockChain,
 		QuitChan:      make(chan bool),
 		Subscriptions: make(map[rpc.ID]statediff.Subscription),
-		WatchedAddresses: []common.Address{}, // when empty, return all diffs
+		WatchedAddresses: []string{}, // when empty, return all diffs
 	}
 	payloadChan := make(chan statediff.Payload, 2)
 	quitChan := make(chan bool)
@@ -280,7 +280,7 @@ func testWatchedAddresses(t *testing.T) {
 		BlockChain:    &blockChain,
 		QuitChan:      make(chan bool),
 		Subscriptions: make(map[rpc.ID]statediff.Subscription),
-		WatchedAddresses: []common.Address{testAccount2Address},
+		WatchedAddresses: []string{testAccount2Address.String()},
 	}
 	payloadChan := make(chan statediff.Payload, 2)
 	quitChan := make(chan bool)

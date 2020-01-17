@@ -65,7 +65,7 @@ type Service struct {
 	// A mapping of rpc.IDs to their subscription channels
 	Subscriptions map[rpc.ID]Subscription
 	// Addresses for contracts we care about - only sending diffs for these to the subscription
-	WatchedAddresses []common.Address
+	WatchedAddresses []string
 	// Whether or not we have any subscribers; only if we do, do we processes state diffs
 	subscribers int32
 }
@@ -77,6 +77,7 @@ func NewStateDiffService(db ethdb.Database, blockChain *core.BlockChain, config 
 		BlockChain:    blockChain,
 		QuitChan:      make(chan bool),
 		Subscriptions: make(map[rpc.ID]Subscription),
+		WatchedAddresses: config.WatchedAddresses,
 	}, nil
 }
 
@@ -202,7 +203,7 @@ func buildAccountDiff(addr common.Address, modifiedAccount state.ModifiedAccount
 
 func (sds *Service) addressInWatchedAddresses(address common.Address) bool {
 	for _, watchedAddress := range sds.WatchedAddresses {
-		if watchedAddress == address {
+		if watchedAddress == address.String() {
 			return true
 		}
 	}
