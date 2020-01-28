@@ -27,9 +27,12 @@ The service is spun up using the below CLI flags
 --statediff.pathsandproofs: boolean flag, tells service to generate paths and proofs for the diffed storage and state trie leaf nodes.
 --statediff.watchedaddresses: string slice flag, used to limit the state diffing process to the given addresses. Usage: --statediff.watchedaddresses=addr1 --statediff.watchedaddresses=addr2 --statediff.watchedaddresses=addr3
 
+Even though statediffs will not be processed for addresses not included in the watchedaddresses slice, an empty statediff payload still may be sent over the subscription, resulting in a "sending state diff payload to subscription" log.
+This will be addresses in a future release by filtering out empty statediff payloads.
+
 If you wish to use the websocket endpoint to subscribe to the statediff service, be sure to open up the Websocket RPC server with the `--ws` flag. The IPC-RPC server is turned on by default.
 
-The statediffing services works only with `--syncmode="full", but -importantly- does not require garbage collection to be turned off (does not require an archival node).
+The statediffing services works only with `--syncmode="full", but -importantly- does not require garbage collection to be turned off (i.e. does not require an archival node).
 
 e.g.
 
