@@ -32,6 +32,8 @@ import (
 	"text/template"
 	"time"
 
+	cli "gopkg.in/urfave/cli.v1"
+
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
@@ -42,7 +44,6 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/dashboard"
 	"github.com/ethereum/go-ethereum/eth"
 	"github.com/ethereum/go-ethereum/eth/downloader"
 	"github.com/ethereum/go-ethereum/eth/gasprice"
@@ -62,9 +63,10 @@ import (
 	"github.com/ethereum/go-ethereum/p2p/netutil"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/ethereum/go-ethereum/statediff"
 	whisper "github.com/ethereum/go-ethereum/whisper/whisperv6"
+
 	pcsclite "github.com/gballet/go-libpcsclite"
-	cli "gopkg.in/urfave/cli.v1"
 )
 
 var (
@@ -78,6 +80,17 @@ SUBCOMMANDS:
 {{range $categorized.Flags}}{{"\t"}}{{.}}
 {{end}}
 {{end}}{{end}}`
+
+	OriginCommandHelpTemplate = `{{.Name}}{{if .Subcommands}} command{{end}}{{if .Flags}} [command options]{{end}} [arguments...]
+{{if .Description}}{{.Description}}
+{{end}}{{if .Subcommands}}
+SUBCOMMANDS:
+	{{range .Subcommands}}{{.Name}}{{with .ShortName}}, {{.}}{{end}}{{ "\t" }}{{.Usage}}
+	{{end}}{{end}}{{if .Flags}}
+OPTIONS:
+{{range $.Flags}}{{"\t"}}{{.}}
+{{end}}
+{{end}}`
 )
 
 func init() {
@@ -227,6 +240,10 @@ var (
 		Name:  "override.istanbul",
 		Usage: "Manually specify Istanbul fork-block, overriding the bundled setting",
 	}
+	OverrideMuirGlacierFlag = cli.Uint64Flag{
+		Name:  "override.muirglacier",
+		Usage: "Manually specify Muir Glacier fork-block, overriding the bundled setting",
+	}
 	// Light server and client settings
 	LightLegacyServFlag = cli.IntFlag{ // Deprecated in favor of light.serve, remove in 2021
 		Name:  "lightserv",
@@ -271,26 +288,6 @@ var (
 	UltraLightOnlyAnnounceFlag = cli.BoolFlag{
 		Name:  "ulc.onlyannounce",
 		Usage: "Ultra light server sends announcements only",
-	}
-	// Dashboard settings
-	DashboardEnabledFlag = cli.BoolFlag{
-		Name:  "dashboard",
-		Usage: "Enable the dashboard",
-	}
-	DashboardAddrFlag = cli.StringFlag{
-		Name:  "dashboard.addr",
-		Usage: "Dashboard listening interface",
-		Value: dashboard.DefaultConfig.Host,
-	}
-	DashboardPortFlag = cli.IntFlag{
-		Name:  "dashboard.host",
-		Usage: "Dashboard listening port",
-		Value: dashboard.DefaultConfig.Port,
-	}
-	DashboardRefreshFlag = cli.DurationFlag{
-		Name:  "dashboard.refresh",
-		Usage: "Dashboard metrics collection refresh rate",
-		Value: dashboard.DefaultConfig.Refresh,
 	}
 	// Ethash settings
 	EthashCacheDirFlag = DirectoryFlag{
@@ -755,6 +752,27 @@ var (
 		Usage: "External EVM configuration (default = built-in interpreter)",
 		Value: "",
 	}
+
+	StateDiffFlag = cli.BoolFlag{
+		Name:  "statediff",
+		Usage: "Enables the processing of state diffs between each block",
+	}
+	StateDiffPathsAndProofs = cli.BoolFlag{
+		Name:  "statediff.pathsandproofs",
+		Usage: "Set to true to generate paths and proof sets for diffed state and storage trie leaf nodes",
+	}
+	StateDiffIntermediateNodes = cli.BoolFlag{
+		Name:  "statediff.intermediatenodes",
+		Usage: "Set to include intermediate (branch and extension) nodes; default (false) processes leaf nodes only",
+	}
+	StateDiffStreamBlock = cli.BoolFlag{
+		Name:  "statediff.streamblock",
+		Usage: "Set to true to stream the block data alongside state diff data in the same subscription payload",
+	}
+	StateDiffWatchedAddresses = cli.StringSliceFlag{
+		Name:  "statediff.watchedaddresses",
+		Usage: "If provided, state diffing process is restricted to these addresses",
+	}
 )
 
 // MakeDataDir retrieves the currently requested data directory, terminating
@@ -963,6 +981,9 @@ func setWS(ctx *cli.Context, cfg *node.Config) {
 	}
 	if ctx.GlobalIsSet(WSApiFlag.Name) {
 		cfg.WSModules = splitAndTrim(ctx.GlobalString(WSApiFlag.Name))
+	}
+	if ctx.GlobalBool(StateDiffFlag.Name) {
+		cfg.WSModules = append(cfg.WSModules, "statediff")
 	}
 }
 
@@ -1530,13 +1551,6 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *eth.Config) {
 	}
 }
 
-// SetDashboardConfig applies dashboard related command line flags to the config.
-func SetDashboardConfig(ctx *cli.Context, cfg *dashboard.Config) {
-	cfg.Host = ctx.GlobalString(DashboardAddrFlag.Name)
-	cfg.Port = ctx.GlobalInt(DashboardPortFlag.Name)
-	cfg.Refresh = ctx.GlobalDuration(DashboardRefreshFlag.Name)
-}
-
 // RegisterEthService adds an Ethereum client to the stack.
 func RegisterEthService(stack *node.Node, cfg *eth.Config) {
 	var err error
@@ -1557,13 +1571,6 @@ func RegisterEthService(stack *node.Node, cfg *eth.Config) {
 	if err != nil {
 		Fatalf("Failed to register the Ethereum service: %v", err)
 	}
-}
-
-// RegisterDashboardService adds a dashboard to the stack.
-func RegisterDashboardService(stack *node.Node, cfg *dashboard.Config, commit string) {
-	stack.Register(func(ctx *node.ServiceContext) (node.Service, error) {
-		return dashboard.New(cfg, commit, ctx.ResolvePath("logs")), nil
-	})
 }
 
 // RegisterShhService configures Whisper and adds it to the given node.
@@ -1610,6 +1617,25 @@ func RegisterGraphQLService(stack *node.Node, endpoint string, cors, vhosts []st
 		return nil, errors.New("no Ethereum service")
 	}); err != nil {
 		Fatalf("Failed to register the GraphQL service: %v", err)
+	}
+}
+
+// RegisterStateDiffService configures and registers a service to stream state diff data over RPC
+func RegisterStateDiffService(stack *node.Node, ctx *cli.Context) {
+	config := statediff.Config{
+		PathsAndProofs:    ctx.GlobalBool(StateDiffPathsAndProofs.Name),
+		IntermediateNodes: ctx.GlobalBool(StateDiffIntermediateNodes.Name),
+		StreamBlock:       ctx.GlobalBool(StateDiffStreamBlock.Name),
+		WatchedAddresses:  ctx.GlobalStringSlice(StateDiffWatchedAddresses.Name),
+	}
+	if err := stack.Register(func(ctx *node.ServiceContext) (node.Service, error) {
+		var ethServ *eth.Ethereum
+		ctx.Service(&ethServ)
+		chainDb := ethServ.ChainDb()
+		blockChain := ethServ.BlockChain()
+		return statediff.NewStateDiffService(chainDb, blockChain, config)
+	}); err != nil {
+		Fatalf("Failed to register State Diff Service", err)
 	}
 }
 
