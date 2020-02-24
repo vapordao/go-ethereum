@@ -166,6 +166,6 @@ type Config struct {
 
 	// MuirGlacier block override (TODO: remove after the fork)
 	OverrideMuirGlacier *big.Int `toml:",omitempty"`
-	
+	// Added by EE
 	StateDiff bool
 }
