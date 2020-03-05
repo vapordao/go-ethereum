@@ -105,27 +105,27 @@ func Asset(name string) ([]byte, error) {
 }
 
 // AssetString returns the asset contents as a string (instead of a []byte).
-//func AssetString(name string) (string, error) {
-//	data, err := Asset(name)
-//	return string(data), err
-//}
+func AssetString(name string) (string, error) {
+	data, err := Asset(name)
+	return string(data), err
+}
 
 // MustAsset is like Asset but panics when Asset would return an error.
 // It simplifies safe initialization of global variables.
-//func MustAsset(name string) []byte {
-//	a, err := Asset(name)
-//	if err != nil {
-//		panic("asset: Asset(" + name + "): " + err.Error())
-//	}
-//
-//	return a
-//}
+func MustAsset(name string) []byte {
+	a, err := Asset(name)
+	if err != nil {
+		panic("asset: Asset(" + name + "): " + err.Error())
+	}
+
+	return a
+}
 
 // MustAssetString is like AssetString but panics when Asset would return an
 // error. It simplifies safe initialization of global variables.
-//func MustAssetString(name string) string {
-//	return string(MustAsset(name))
-//}
+func MustAssetString(name string) string {
+	return string(MustAsset(name))
+}
 
 // AssetInfo loads and returns the asset info for the given name.
 // It returns an error if the asset could not be found or
@@ -144,39 +144,39 @@ func AssetInfo(name string) (os.FileInfo, error) {
 
 // AssetDigest returns the digest of the file with the given name. It returns an
 // error if the asset could not be found or the digest could not be loaded.
-//func AssetDigest(name string) ([sha256.Size]byte, error) {
-//	canonicalName := strings.Replace(name, "\\", "/", -1)
-//	if f, ok := _bindata[canonicalName]; ok {
-//		a, err := f()
-//		if err != nil {
-//			return [sha256.Size]byte{}, fmt.Errorf("AssetDigest %s can't read by error: %v", name, err)
-//		}
-//		return a.digest, nil
-//	}
-//	return [sha256.Size]byte{}, fmt.Errorf("AssetDigest %s not found", name)
-//}
+func AssetDigest(name string) ([sha256.Size]byte, error) {
+	canonicalName := strings.Replace(name, "\\", "/", -1)
+	if f, ok := _bindata[canonicalName]; ok {
+		a, err := f()
+		if err != nil {
+			return [sha256.Size]byte{}, fmt.Errorf("AssetDigest %s can't read by error: %v", name, err)
+		}
+		return a.digest, nil
+	}
+	return [sha256.Size]byte{}, fmt.Errorf("AssetDigest %s not found", name)
+}
 
 // Digests returns a map of all known files and their checksums.
-//func Digests() (map[string][sha256.Size]byte, error) {
-//	mp := make(map[string][sha256.Size]byte, len(_bindata))
-//	for name := range _bindata {
-//		a, err := _bindata[name]()
-//		if err != nil {
-//			return nil, err
-//		}
-//		mp[name] = a.digest
-//	}
-//	return mp, nil
-//}
+func Digests() (map[string][sha256.Size]byte, error) {
+	mp := make(map[string][sha256.Size]byte, len(_bindata))
+	for name := range _bindata {
+		a, err := _bindata[name]()
+		if err != nil {
+			return nil, err
+		}
+		mp[name] = a.digest
+	}
+	return mp, nil
+}
 
 // AssetNames returns the names of the assets.
-//func AssetNames() []string {
-//	names := make([]string, 0, len(_bindata))
-//	for name := range _bindata {
-//		names = append(names, name)
-//	}
-//	return names
-//}
+func AssetNames() []string {
+	names := make([]string, 0, len(_bindata))
+	for name := range _bindata {
+		names = append(names, name)
+	}
+	return names
+}
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
