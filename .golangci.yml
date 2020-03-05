@@ -43,3 +43,6 @@ issues:
     - path: core/vm/instructions_test.go
       linters:
         - goconst
+    - path: cmd/faucet/
+      linters:
+        - deadcode
