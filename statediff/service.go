@@ -19,6 +19,7 @@ package statediff
 import (
 	"bytes"
 	"fmt"
+	"reflect"
 	"sync"
 	"sync/atomic"
 
@@ -174,8 +175,35 @@ func (sds *Service) processStateDiff(currentBlock, parentBlock *types.Block) err
 		payload.ReceiptsRlp = receiptBuff.Bytes()
 	}
 
-	sds.send(payload)
+	isEmpty, err := isEmptyPayload(payload, currentBlock)
+	if err != nil {
+		log.Warn("Error checking if payload is empty")
+	}
+
+	//Send a payload to subscribers only if isn't empty
+	if !isEmpty {
+		sds.send(payload)
+	}
+
 	return nil
+}
+
+func isEmptyPayload(payload Payload, block *types.Block) (bool, error) {
+	emptyStateDiffRlp, err := getEmptyStateDiffRlpForBlock(block)
+	if err != nil {
+		return false, err
+	}
+
+	return reflect.DeepEqual(payload.StateDiffRlp, emptyStateDiffRlp), nil
+}
+
+func getEmptyStateDiffRlpForBlock(block *types.Block) ([]byte, error) {
+	stateDiffWithoutUpdatedAccounts := StateDiff{
+		BlockNumber: block.Number(),
+		BlockHash:   block.Hash(),
+	}
+
+	return rlp.EncodeToBytes(stateDiffWithoutUpdatedAccounts)
 }
 
 // Subscribe is used by the API to subscribe to the service loop
