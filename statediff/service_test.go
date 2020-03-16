@@ -36,6 +36,7 @@ import (
 func TestServiceLoop(t *testing.T) {
 	testErrorInChainEventLoop(t)
 	testErrorInBlockLoop(t)
+	testWhenAStateDiffIsEmpty(t)
 }
 
 var (
@@ -55,9 +56,9 @@ var (
 	testRoot1 = common.HexToHash("0x03")
 	testRoot2 = common.HexToHash("0x04")
 	testRoot3 = common.HexToHash("0x04")
-	header1   = types.Header{ParentHash: parentHash1, Root: testRoot1}
-	header2   = types.Header{ParentHash: parentHash2, Root: testRoot2}
-	header3   = types.Header{ParentHash: common.HexToHash("parent hash"), Root: testRoot3}
+	header1   = types.Header{Number: big.NewInt(rand.Int63()), ParentHash: parentHash1, Root: testRoot1}
+	header2   = types.Header{Number: big.NewInt(rand.Int63()), ParentHash: parentHash2, Root: testRoot2}
+	header3   = types.Header{Number: big.NewInt(rand.Int63()), ParentHash: common.HexToHash("parent hash"), Root: testRoot3}
 
 	testBlock1 = types.NewBlock(&header1, nil, nil, nil)
 	testBlock2 = types.NewBlock(&header2, nil, nil, nil)
@@ -75,7 +76,7 @@ var (
 )
 
 func testErrorInChainEventLoop(t *testing.T) {
-	//the first chain event causes and error (in blockchain mock)
+	//the third chain event causes and error (in blockchain mock)
 	builder := mocks.Builder{}
 	blockChain := mocks.BlockChain{}
 	service := statediff.Service{
@@ -152,6 +153,86 @@ func testErrorInChainEventLoop(t *testing.T) {
 	if !reflect.DeepEqual(blockChain.ParentHashesLookedUp, expectedHashes) {
 		t.Error("Test failure:", t.Name())
 		t.Logf("Actual parent hash does not equal expected.\nactual:%+v\nexpected: %+v", blockChain.ParentHashesLookedUp, expectedHashes)
+	}
+}
+
+func testWhenAStateDiffIsEmpty(t *testing.T) {
+	//the third chain event causes and error (in blockchain mock)
+	builder := mocks.Builder{}
+	blockChain := mocks.BlockChain{}
+	service := statediff.Service{
+		Mutex:         sync.Mutex{},
+		Builder:       &builder,
+		BlockChain:    &blockChain,
+		QuitChan:      make(chan bool),
+		Subscriptions: make(map[rpc.ID]statediff.Subscription),
+		StreamBlock:   true,
+	}
+	payloadChan := make(chan statediff.Payload, 2)
+	quitChan := make(chan bool)
+	service.Subscribe(rpc.NewID(), payloadChan, quitChan)
+	blockMapping := make(map[common.Hash]*types.Block)
+	blockMapping[parentBlock1.Hash()] = parentBlock1
+	blockMapping[parentBlock2.Hash()] = parentBlock2
+	blockChain.SetParentBlocksToReturn(blockMapping)
+	blockChain.SetChainEvents([]core.ChainEvent{event1, event2, event3})
+
+	accountDiff := statediff.AccountDiff{
+		Leaf:    true,
+		Key:     []byte{1, 2, 3, 4, 5, 6},
+		Value:   []byte{7, 8, 9, 10, 11, 12},
+		Storage: nil,
+	}
+	testStateDiff := statediff.StateDiff{
+		BlockNumber:     testBlock1.Number(),
+		BlockHash:       testBlock1.Hash(),
+		CreatedAccounts: []statediff.AccountDiff{accountDiff},
+	}
+	emptyStateDiff := statediff.StateDiff{
+		BlockNumber: testBlock2.Number(),
+		BlockHash:   testBlock2.Hash(),
+	}
+	testStateDiffs := make(map[int64]statediff.StateDiff)
+	testStateDiffs[testBlock1.Number().Int64()] = testStateDiff
+	testStateDiffs[testBlock2.Number().Int64()] = emptyStateDiff
+	builder.SetStateDiffsToBuild(testStateDiffs)
+
+	payloads := make([]statediff.Payload, 0, 2)
+	wg := sync.WaitGroup{}
+	go func() {
+		wg.Add(1)
+		for i := 0; i < 2; i++ {
+			select {
+			case payload := <-payloadChan:
+				payloads = append(payloads, payload)
+			case <-quitChan:
+			}
+		}
+		wg.Done()
+	}()
+
+	service.Loop(eventsChannel)
+	wg.Wait()
+	if len(payloads) != 1 {
+		t.Error("Test failure:", t.Name())
+		t.Logf("Actual number of payloads does not equal expected.\nactual: %+v\nexpected: 1", len(payloads))
+	}
+
+	decodedStateDiff := new(statediff.StateDiff)
+	decodeErr := rlp.DecodeBytes(payloads[0].StateDiffRlp, decodedStateDiff)
+	if decodeErr != nil {
+		t.Error("Test failure:", t.Name())
+		t.Log("Error decoding StateDiffRlp from test Payload.")
+	}
+
+	if decodedStateDiff.BlockNumber.Int64() != testBlock1.Number().Int64() {
+		t.Error("Test failure:", t.Name())
+		t.Logf("Test payload block number does not equal expected.\nactual: %+v\nexpected: %+v", decodedStateDiff.BlockNumber, testBlock1.Number())
+	}
+
+	if reflect.DeepEqual(decodedStateDiff.CreatedAccounts[0], accountDiff) {
+		t.Error("Test failure:", t.Name())
+		t.Logf("Test payload block number does not equal expected.\nactual: %+v\nexpected: %+v", decodedStateDiff.BlockNumber, testBlock1.Number())
 	}
 }
 

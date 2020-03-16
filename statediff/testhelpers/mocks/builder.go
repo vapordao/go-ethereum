@@ -29,7 +29,7 @@ type Builder struct {
 	NewStateRoot common.Hash
 	BlockNumber  *big.Int
 	BlockHash    common.Hash
-	stateDiff    statediff.StateDiff
+	stateDiffs   map[int64]statediff.StateDiff
 	builderError error
 }
 
@@ -39,13 +39,14 @@ func (builder *Builder) BuildStateDiff(oldStateRoot, newStateRoot common.Hash, b
 	builder.NewStateRoot = newStateRoot
 	builder.BlockNumber = blockNumber
 	builder.BlockHash = blockHash
+	stateDiffToReturn := builder.stateDiffs[blockNumber.Int64()]
 
-	return builder.stateDiff, builder.builderError
+	return stateDiffToReturn, builder.builderError
 }
 
 // SetStateDiffToBuild mock method
-func (builder *Builder) SetStateDiffToBuild(stateDiff statediff.StateDiff) {
-	builder.stateDiff = stateDiff
+func (builder *Builder) SetStateDiffsToBuild(stateDiffs map[int64]statediff.StateDiff) {
+	builder.stateDiffs = stateDiffs
 }
 
 // SetBuilderError mock method
