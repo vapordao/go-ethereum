@@ -87,9 +87,7 @@ func (sdb *builder) BuildStateDiff(oldStateRoot, newStateRoot common.Hash, block
 	}
 
 	// Find all the diffed keys
-	createKeys := sortKeys(creations)
-	deleteKeys := sortKeys(deletions)
-	updatedKeys := findIntersection(createKeys, deleteKeys)
+	updatedKeys := findIntersection(creations, deletions)
 
 	// Build and return the statediff
 	updatedAccounts, err := sdb.buildDiffIncremental(creations, deletions, updatedKeys)

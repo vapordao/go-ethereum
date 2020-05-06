@@ -21,7 +21,6 @@ package statediff
 
 import (
 	"sort"
-	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/trie"
@@ -55,39 +54,31 @@ func bytesToNiblePath(path []byte) string {
 
 // findIntersection finds the set of strings from both arrays that are equivalent (same key as same index)
 // this is used to find which keys have been both "deleted" and "created" i.e. they were updated
-func findIntersection(a, b []string) []string {
-	lenA := len(a)
-	lenB := len(b)
-	iOfA, iOfB := 0, 0
-	updates := make([]string, 0)
-	if iOfA >= lenA || iOfB >= lenB {
-		return updates
-	}
-	for {
-		switch strings.Compare(a[iOfA], b[iOfB]) {
-		// -1 when a[iOfA] < b[iOfB]
-		case -1:
-			iOfA++
-			if iOfA >= lenA {
-				return updates
-			}
-			// 0 when a[iOfA] == b[iOfB]
-		case 0:
-			updates = append(updates, a[iOfA])
-			iOfA++
-			iOfB++
-			if iOfA >= lenA || iOfB >= lenB {
-				return updates
-			}
-			// 1 when a[iOfA] > b[iOfB]
-		case 1:
-			iOfB++
-			if iOfB >= lenB {
-				return updates
-			}
+func findIntersection(created, deleted AccountsMap) []string {
+	var keys []string
+	for key := range created {
+		_, ok := deleted[key]
+		if ok {
+			keys = append(keys, key.Hex())
 		}
 	}
 
+	for key, _ := range deleted {
+		_, ok := created[key]
+		if ok {
+			keys = append(keys, key.Hex())
+		}
+	}
+	uniqueKeys := make(map[string]bool)
+	var uniqueKeysList []string
+	for _, entry := range keys {
+		if _, ok := uniqueKeys[entry]; !ok {
+			uniqueKeys[entry] = true
+			uniqueKeysList = append(uniqueKeysList, entry)
+		}
+	}
+
+	return uniqueKeysList
 }
 
 // pathToStr converts the NodeIterator path to a string representation
