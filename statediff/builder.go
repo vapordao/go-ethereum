@@ -103,6 +103,14 @@ func (sdb *builder) BuildStateDiff(oldStateRoot, newStateRoot common.Hash, block
 		return StateDiff{}, fmt.Errorf("error building diff for deleted accounts: %v", err)
 	}
 
+	fmt.Println(fmt.Sprintf("state diff %+v", StateDiff{
+		BlockNumber:     blockNumber,
+		BlockHash:       blockHash,
+		CreatedAccounts: createdAccounts,
+		DeletedAccounts: deletedAccounts,
+		UpdatedAccounts: updatedAccounts,
+	}))
+
 	return StateDiff{
 		BlockNumber:     blockNumber,
 		BlockHash:       blockHash,
@@ -233,8 +241,8 @@ func (sdb *builder) buildDiffIncremental(creations AccountsMap, deletions Accoun
 			Path:    createdAcc.Path,
 			Storage: storageDiffs,
 		})
-		delete(creations, common.HexToHash(val))
-		delete(deletions, common.HexToHash(val))
+		//delete(creations, common.HexToHash(val))
+		//delete(deletions, common.HexToHash(val))
 	}
 
 	return updatedAccounts, nil
@@ -273,6 +281,7 @@ func (sdb *builder) buildStorageDiffsIncremental(oldSR common.Hash, newSR common
 
 func (sdb *builder) buildStorageDiffsFromTrie(it trie.NodeIterator) ([]StorageDiff, error) {
 	storageDiffs := make([]StorageDiff, 0)
+	fmt.Println(fmt.Sprintf("here %+v", it))
 	for {
 		log.Debug("Iterating over state at path ", "path", pathToStr(it))
 		if it.Leaf() {
@@ -314,5 +323,6 @@ func (sdb *builder) buildStorageDiffsFromTrie(it trie.NodeIterator) ([]StorageDi
 		}
 	}
 
+	fmt.Println(fmt.Sprintf("storageDiffs: %+v", storageDiffs))
 	return storageDiffs, nil
 }

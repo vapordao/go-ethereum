@@ -150,6 +150,7 @@ func (sds *Service) Loop(chainEventCh chan core.ChainEvent) {
 
 // processStateDiff method builds the state diff payload from the current and parent block before sending it to listening subscriptions
 func (sds *Service) processStateDiff(currentBlock, parentBlock *types.Block) error {
+	fmt.Println("processing state diff")
 	stateDiff, err := sds.Builder.BuildStateDiff(parentBlock.Root(), currentBlock.Root(), currentBlock.Number(), currentBlock.Hash())
 	if err != nil {
 		return err
@@ -176,6 +177,7 @@ func (sds *Service) processStateDiff(currentBlock, parentBlock *types.Block) err
 	}
 
 	isEmpty, err := isEmptyPayload(payload, currentBlock)
+	fmt.Println(isEmpty)
 	if err != nil {
 		log.Warn("Error checking if payload is empty")
 	}

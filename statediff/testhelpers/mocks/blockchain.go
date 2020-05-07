@@ -18,7 +18,7 @@ package mocks
 
 import (
 	"errors"
-
+	"fmt"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -68,19 +68,19 @@ func (blockChain *BlockChain) SetChainEvents(chainEvents []core.ChainEvent) {
 func (blockChain *BlockChain) SubscribeChainEvent(ch chan<- core.ChainEvent) event.Subscription {
 	subErr := errors.New("Subscription Error")
 
-	var eventCounter int
 	subscription := event.NewSubscription(func(quit <-chan struct{}) error {
-		for _, chainEvent := range blockChain.ChainEvents {
-			if eventCounter > 1 {
+		for index, chainEvent := range blockChain.ChainEvents {
+			fmt.Println("event index", index)
+			if index == len(blockChain.ChainEvents)- 1{
 				time.Sleep(250 * time.Millisecond)
 				return subErr
 			}
 			select {
 			case ch <- chainEvent:
 			case <-quit:
+				fmt.Println("are we getting here?")
 				return nil
 			}
-			eventCounter++
 		}
 		return nil
 	})
