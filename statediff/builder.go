@@ -275,21 +275,46 @@ func (sdb *builder) buildStorageDiffsIncremental(oldSR common.Hash, newSR common
 
 	oldIt := oldTrie.NodeIterator(make([]byte, 0))
 	newIt := newTrie.NodeIterator(make([]byte, 0))
-	it, _ := trie.NewDifferenceIterator(oldIt, newIt)
-	return sdb.buildStorageDiffsFromTrie(it)
+	it, itCount := trie.NewDifferenceIterator(oldIt, newIt)
+	it2, itCount2 := trie.NewDifferenceIterator(newIt, oldIt)
+	fmt.Println(fmt.Sprintf("it count 1 %+v", itCount))
+	fmt.Println(fmt.Sprintf("it count 2: %+v", itCount2))
+
+    var	sd []StorageDiff
+	sd1, err1 :=  sdb.buildStorageDiffsFromTrie(it)
+	if err1 != nil {
+		return sd, err1
+	}
+
+	sd2, err2 :=  sdb.buildStorageDiffsFromTrie(it2)
+	if err2 != nil {
+		return sd, err2
+	}
+
+	fmt.Println("length of sd1", len(sd1))
+	fmt.Println("length of sd2", len(sd2))
+
+	//length of sd1 0
+	//length of sd2 1
+
+	sd = append(sd1, sd2...)
+
+	return sd, nil
 }
 
 func (sdb *builder) buildStorageDiffsFromTrie(it trie.NodeIterator) ([]StorageDiff, error) {
 	storageDiffs := make([]StorageDiff, 0)
-	fmt.Println(fmt.Sprintf("here %+v", it))
+	var counter int
 	for {
 		log.Debug("Iterating over state at path ", "path", pathToStr(it))
 		if it.Leaf() {
+			counter++
 			log.Debug("Found leaf in storage", "path", pathToStr(it))
 			leafKey := make([]byte, len(it.LeafKey()))
 			copy(leafKey, it.LeafKey())
 			leafValue := make([]byte, len(it.LeafBlob()))
 			copy(leafValue, it.LeafBlob())
+			fmt.Println("leaf blob", it.LeafBlob())
 			sd := StorageDiff{
 				Leaf:  true,
 				Key:   leafKey,
@@ -323,6 +348,6 @@ func (sdb *builder) buildStorageDiffsFromTrie(it trie.NodeIterator) ([]StorageDi
 		}
 	}
 
-	fmt.Println(fmt.Sprintf("storageDiffs: %+v", storageDiffs))
+	fmt.Println("Counter: ", counter)
 	return storageDiffs, nil
 }

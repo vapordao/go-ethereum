@@ -387,7 +387,8 @@ func TestBuilder(t *testing.T) {
 		sort.Slice(expectedStateDiffRlp, func(i, j int) bool { return expectedStateDiffRlp[i] < expectedStateDiffRlp[j] })
 		if !bytes.Equal(receivedStateDiffRlp, expectedStateDiffRlp) {
 			t.Logf("Test failed: %s", test.name)
-			t.Errorf("actual state diff rlp: %+v\nexpected state diff rlp: %+v", receivedStateDiffRlp, expectedStateDiffRlp)
+			//t.Errorf("actual state diff rlp: %+v\nexpected state diff rlp: %+v", receivedStateDiffRlp, expectedStateDiffRlp)
+			t.Error()
 		}
 	}
 }
