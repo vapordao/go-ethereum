@@ -121,7 +121,7 @@ func TestStateChangesEmittedFromCommit(t *testing.T) {
 			state.AddBalance(addr, newBalance)
 
 			for storageKey := range account.Storage {
-				updatedStorageValue := common.BytesToHash([]byte{0, 1, 2, 3})
+				updatedStorageValue := common.BytesToHash([]byte{0})
 
 				// Collect modified accounts to assert against
 				account.Storage[storageKey] = updatedStorageValue
