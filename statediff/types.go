@@ -33,25 +33,41 @@ type Subscription struct {
 
 // Payload packages the data to send to statediff subscriptions
 type Payload struct {
+	BlockRlp     []byte `json:"blockRlp"`
+	ReceiptsRlp  []byte `json:"receiptsRlp"`
 	StateDiffRlp []byte `json:"stateDiff"    gencodec:"required"`
+
+	encoded []byte
+	err     error
 }
 
 // StateDiff is the final output structure from the builder
 type StateDiff struct {
 	BlockNumber     *big.Int      `json:"blockNumber"     gencodec:"required"`
 	BlockHash       common.Hash   `json:"blockHash"       gencodec:"required"`
+	CreatedAccounts []AccountDiff `json:"createdAccounts"`
+	DeletedAccounts []AccountDiff `json:"deletedAccounts"`
 	UpdatedAccounts []AccountDiff `json:"updatedAccounts" gencodec:"required"`
+
+	encoded []byte
+	err     error
 }
 
 // AccountDiff holds the data for a single state diff node
 type AccountDiff struct {
+	Leaf    bool          `json:"leaf"`
 	Key     []byte        `json:"key"         gencodec:"required"`
 	Value   []byte        `json:"value"       gencodec:"required"`
+	Proof   [][]byte      `json:"proof"`
+	Path    []byte        `json:"path"`
 	Storage []StorageDiff `json:"storage"     gencodec:"required"`
 }
 
 // StorageDiff holds the data for a single storage diff node
 type StorageDiff struct {
-	Key   []byte `json:"key"         gencodec:"required"`
-	Value []byte `json:"value"       gencodec:"required"`
+	Leaf  bool     `json:"leaf"`
+	Key   []byte   `json:"key"         gencodec:"required"`
+	Value []byte   `json:"value"       gencodec:"required"`
+	Proof [][]byte `json:"proof"`
+	Path  []byte   `json:"path"`
 }
