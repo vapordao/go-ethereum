@@ -36,7 +36,6 @@ import (
 )
 
 const stateChangeEventChanSize = 20000
-var emptyStateDiffBytes []byte
 
 type blockChain interface {
 	SubscribeStateChangeEvents(ch chan<- core.StateChangeEvent) event.Subscription
